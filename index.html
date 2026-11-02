@@ -570,6 +570,49 @@ main{ overflow-x:clip; }
 @media (max-width:1199px){ .shop-sec .hangul-deco{ font-size:18px; height:240px; top:16px; opacity:.16; } }
 
 /* =========================================================
+   宴会・大部屋
+   ========================================================= */
+.banquet-grid{ display:grid; gap:28px; align-items:center; }
+.banquet-photo{ position:relative; margin:0; }
+.banquet-photo img{ width:100%; aspect-ratio:4/3; object-fit:cover; object-position:50% 45%; }
+.banquet-photo::after{ content:""; position:absolute; inset:8px; border:1px solid rgba(245,241,232,.35); pointer-events:none; }
+.banquet-photo figcaption{ position:absolute; left:0; bottom:0; padding:4px 12px; background:rgba(43,43,43,.62); color:#fff; font-size:11px; letter-spacing:.16em; }
+@media (max-width:767px){ .banquet-photo{ margin-inline:calc(var(--gutter) * -1); } }
+.banquet-capacity{
+  display:flex; align-items:baseline; gap:.35em; flex-wrap:wrap;
+  font-family:var(--serif); color:var(--ink); line-height:1;
+  padding-bottom:18px; border-bottom:1px solid var(--brown);
+}
+.banquet-capacity .pre{ font-size:15px; letter-spacing:.2em; color:var(--moss-deep); font-weight:600; }
+.banquet-capacity .num{ font-size:clamp(64px, 9vw, 96px); font-weight:600; letter-spacing:-.02em; color:var(--rouge); font-variant-numeric:tabular-nums; }
+.banquet-capacity .unit{ font-size:22px; font-weight:600; letter-spacing:.12em; }
+.banquet-capacity .kr{ flex-basis:100%; margin-top:10px; font-family:var(--kr-serif); font-size:14px; letter-spacing:.3em; color:var(--moss); }
+.banquet-lead{ margin-top:20px; color:var(--ink-soft); line-height:2.05; }
+.banquet-points{ margin-top:22px; display:grid; gap:0; }
+.banquet-points li{ display:grid; grid-template-columns:2.2em 1fr; gap:10px; padding:14px 2px; border-bottom:1px solid var(--line); }
+.banquet-points .mark{ font-family:var(--serif); font-size:13px; color:var(--rouge); letter-spacing:.1em; padding-top:3px; }
+.banquet-points h3{ font-family:var(--serif); font-weight:600; font-size:16px; letter-spacing:.12em; line-height:1.6; }
+.banquet-points p{ font-size:13.5px; color:var(--ink-soft); line-height:1.9; margin-top:2px; }
+.banquet-cta{ margin-top:26px; display:grid; gap:10px; }
+.banquet-cta .btn svg{ width:18px; height:18px; }
+.btn--tel{ flex-wrap:wrap; column-gap:12px; row-gap:2px; padding-block:12px; min-height:64px; }
+.btn--tel .tel-num{ font-family:var(--serif); font-size:19px; letter-spacing:.08em; font-variant-numeric:tabular-nums; }
+@media (max-width:767px){ .btn--tel{ display:grid; grid-template-columns:auto 1fr auto; justify-items:start; text-align:left; } .btn--tel svg{ grid-row:1 / span 2; } .btn--tel::after{ grid-column:3; grid-row:1 / span 2; } .btn--tel .tel-label{ font-size:12px; } }
+.banquet-cta small{ font-size:12px; color:#8C8170; letter-spacing:.06em; }
+@media (min-width:768px){
+  .banquet-grid{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:44px; }
+  .banquet-photo img{ aspect-ratio:4/5; }
+}
+@media (min-width:1200px){ .banquet-grid{ grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:72px; } }
+.calli--janchi{ width:70px; right:-6px; top:16px; opacity:.13; transform:rotate(3deg); }
+@media (min-width:768px){ .calli--janchi{ width:130px; right:2.5%; top:28px; opacity:.16; } }
+@media (min-width:1200px){ .calli--janchi{ width:170px; right:3.5%; } }
+.js-motion .banquet-photo.is-pending{ clip-path:inset(0 0 100% 0); }
+.js-motion .banquet-photo{ clip-path:inset(0 0 0 0); transition:clip-path 1.9s var(--ease-brush); }
+.js-motion .banquet-capacity.is-pending .num{ opacity:0; transform:translateY(30px) scale(.9); }
+.js-motion .banquet-capacity .num{ display:inline-block; transition:opacity 1.6s .3s ease, transform 1.6s .3s var(--ease-out); }
+
+/* =========================================================
    SECTION 05：店舗情報
    ========================================================= */
 .shop-sec{ position:relative; }
@@ -699,6 +742,7 @@ main{ overflow-x:clip; }
         <li><a href="#top" aria-current="page">トップ</a></li>
         <li><a href="#concept">こだわり</a></li>
         <li><a href="#menu">メニュー</a></li>
+        <li><a href="#banquet">ご宴会</a></li>
         <li><a href="#shop">店舗情報</a></li>
       </ul>
       <a class="reserve" href="#shop">
@@ -719,6 +763,7 @@ main{ overflow-x:clip; }
       <li><a href="#top">トップ<small>처음</small></a></li>
       <li><a href="#concept">こだわり<small>정성</small></a></li>
       <li><a href="#menu">メニュー<small>메뉴</small></a></li>
+      <li><a href="#banquet">ご宴会<small>연회</small></a></li>
       <li><a href="#shop">店舗情報<small>매장</small></a></li>
     </ul>
     <a class="btn btn--fill" href="tel:0268224129">お電話でのご予約 0268-22-4129</a>
@@ -879,6 +924,39 @@ main{ overflow-x:clip; }
   <img class="calli calli--mat" src="images/calli-mat.png" alt="" width="420" height="590" aria-hidden="true" loading="lazy">
 </section>
 
+<!-- ===================== 宴会・大部屋 ===================== -->
+<section class="section banquet-sec" id="banquet" aria-labelledby="banquet-title">
+  <div class="container">
+    <header class="sec-title reveal">
+      <h2 id="banquet-title">ご宴会・大部屋<img src="images/peony.png" alt="" width="168" height="108"></h2>
+      <span class="kr" lang="ko">단체 연회</span>
+      <div class="ornament" aria-hidden="true"><i></i></div>
+    </header>
+
+    <div class="banquet-grid">
+      <figure class="banquet-photo reveal">
+        <img src="images/banquet.jpg" alt="お座敷の大部屋。テーブルごとにロースターを備えた長い宴会席" width="858" height="1072" loading="lazy" decoding="async">
+        <figcaption>お座敷の大部屋</figcaption>
+      </figure>
+
+      <div class="banquet-body">
+        <p class="banquet-capacity reveal"><span class="pre">最大</span><span class="num">30</span><span class="unit">名様</span><span class="kr" lang="ko">최대 30명 단체석</span></p>
+        <p class="banquet-lead reveal">お座敷の大部屋は、最大30名様までご利用いただけます。歓送迎会や忘新年会、同窓会、ご家族のお祝いなど、みんなで焼肉を囲む集まりにどうぞ。</p>
+        <ul class="banquet-points">
+          <li class="reveal"><span class="mark">壱</span><div><h3>最大30名様の大部屋</h3><p>会社の宴会や大人数の集まりも、ひと部屋でご一緒に。</p></div></li>
+          <li class="reveal"><span class="mark">弐</span><div><h3>くつろげるお座敷</h3><p>靴を脱いで、ゆったりと。小さなお子さま連れのご家族にも。</p></div></li>
+          <li class="reveal"><span class="mark">参</span><div><h3>テーブルごとにロースター</h3><p>大人数でも、それぞれの席で焼きたてを楽しめます。</p></div></li>
+        </ul>
+        <div class="banquet-cta reveal">
+          <a class="btn btn--fill btn--tel" href="tel:0268224129"><svg aria-hidden="true"><use href="#i-phone"/></svg><span class="tel-label">ご宴会のご予約・ご相談</span><span class="tel-num">0268-22-4129</span></a>
+          <small>人数・日程・ご予算など、お気軽にお電話でご相談ください。</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <img class="calli calli--janchi" src="images/calli-janchi.png" alt="" width="316" height="730" aria-hidden="true" loading="lazy">
+</section>
+
 <!-- ===================== SECTION 05：店舗情報 ===================== -->
 <section class="section shop-sec" id="shop" aria-labelledby="shop-title">
   <div class="container">
@@ -932,6 +1010,7 @@ main{ overflow-x:clip; }
         <li><a href="#top">トップ</a></li>
         <li><a href="#concept">こだわり</a></li>
         <li><a href="#menu">メニュー</a></li>
+        <li><a href="#banquet">ご宴会</a></li>
         <li><a href="#shop">店舗情報</a></li>
       </ul>
     </nav>
