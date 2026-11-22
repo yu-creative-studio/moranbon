@@ -62,6 +62,11 @@
   --rouge:#B45A4A;
   --beige:#D8C7A8;
   --line:rgba(90,70,50,.22);
+  --moss-night:#2F3A22;
+  --ink-night:#211A14;
+  --on-dark:#F1E9D8;
+  --on-dark-soft:rgba(241,233,216,.72);
+  --on-dark-line:rgba(216,199,168,.24);
 
   --serif:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif;
   --sans:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
@@ -714,6 +719,62 @@ main{ overflow-x:clip; }
   padding:12px 22px; transition:opacity .3s, transform .3s; max-width:calc(100% - 32px); text-align:center;
 }
 .toast.is-show{ opacity:1; transform:translate(-50%,0); }
+
+/* =========================================================
+   色の面（こだわり＝深いモスグリーン／ご宴会＝墨色）と
+   亞字살（韓屋の窓格子）の文様
+   ========================================================= */
+.features,.banquet-sec{
+  --line:var(--on-dark-line);
+  color:var(--on-dark);
+  isolation:isolate;
+  margin-block:46px;
+}
+.features{ background-color:var(--moss-night); }
+.banquet-sec{ background-color:var(--ink-night); }
+/* 面の上に、ごく薄い格子文様と和紙の質感 */
+.features::before,.banquet-sec::before{
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:url("images/lattice-light.svg") 0 0 / 96px 96px, url("images/washi.jpg") 0 0 / 700px 700px;
+  opacity:.07;
+}
+.banquet-sec::before{ opacity:.06; }
+/* 上下の縁：格子の帯 */
+.features::after,.banquet-sec::after{
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:
+    url("images/lattice-light.svg") 0 0 / 26px 26px repeat-x,
+    url("images/lattice-light.svg") 0 100% / 26px 26px repeat-x;
+  opacity:.4;
+}
+/* 見出し */
+.features .sec-title h2,.banquet-sec .sec-title h2{ color:var(--on-dark); }
+.features .sec-title .kr,.banquet-sec .sec-title .kr{ color:var(--beige); }
+.features .ornament,.banquet-sec .ornament{ color:var(--beige); }
+/* こだわり */
+.features .feature-icon{ border-color:rgba(216,199,168,.5); background:rgba(241,233,216,.06); }
+.features .feature-icon::after{ border-color:rgba(216,199,168,.22); }
+.features .feature-icon svg [stroke="#5A4632"]{ stroke:var(--on-dark); }
+.features .feature-icon svg [fill="#5A4632"]{ fill:var(--on-dark); }
+.features .feature-icon svg{ stroke:var(--on-dark); }
+.features .feature-icon svg [stroke="#6B7A3E"]{ stroke:#B9C48A; }
+.features .feature-icon svg [stroke="#B45A4A"]{ stroke:#E39A86; }
+.features .feature h3 .num{ color:#E39A86; }
+.features .feature p{ color:var(--on-dark-soft); }
+.features .peony-line{ color:var(--beige); opacity:.12; }
+.calli--jeong{ mix-blend-mode:normal; opacity:.07 !important; }
+/* ご宴会 */
+.banquet-sec .banquet-capacity{ color:var(--on-dark); border-bottom-color:rgba(216,199,168,.5); }
+.banquet-sec .banquet-capacity .pre{ color:#B9C48A; }
+.banquet-sec .banquet-capacity .num{ color:#E3826E; }
+.banquet-sec .banquet-capacity .kr{ color:var(--beige); }
+.banquet-sec .banquet-lead,.banquet-sec .banquet-points p{ color:var(--on-dark-soft); }
+.banquet-sec .banquet-points .mark{ color:#E39A86; }
+.banquet-sec .banquet-cta small{ color:rgba(241,233,216,.55); }
+.banquet-sec .btn--fill{ background:var(--moss); border-color:var(--moss); }
+.banquet-photo::after{ border-color:rgba(216,199,168,.4); }
+.calli--janchi{ mix-blend-mode:normal; opacity:.08 !important; }
+
 </style>
 </head>
 
@@ -780,7 +841,7 @@ main{ overflow-x:clip; }
   </div>
 
   <div class="hero-copy">
-    <h1 id="hero-title"><span class="line">変わらない味、</span><span class="line">変わらない時間。<span class="seal" aria-hidden="true" lang="ko">모란봉</span></span></h1>
+    <h1 id="hero-title"><span class="line">変わらない味、</span><span class="line">変わらない時間。</span></h1>
     <p class="hero-kr" lang="ko">변하지 않는 맛, 변하지 않는 시간.</p>
     <p class="hero-lead">
       <span>創業から受け継がれる秘伝のタレと、</span><span>厳選したお肉。</span>
@@ -868,7 +929,7 @@ main{ overflow-x:clip; }
       </li>
     </ul>
   </div>
-  <img class="calli calli--jeong" src="images/calli-jeong.png" alt="" width="448" height="534" aria-hidden="true" loading="lazy">
+  <img class="calli calli--jeong" src="images/calli-jeong-w.png" alt="" width="414" height="532" aria-hidden="true" loading="lazy">
   <div class="peony-line" aria-hidden="true"><svg><use href="#peony-line"/></svg></div>
 </section>
 
@@ -954,7 +1015,7 @@ main{ overflow-x:clip; }
       </div>
     </div>
   </div>
-  <img class="calli calli--janchi" src="images/calli-janchi.png" alt="" width="316" height="730" aria-hidden="true" loading="lazy">
+  <img class="calli calli--janchi" src="images/calli-janchi-w.png" alt="" width="321" height="709" aria-hidden="true" loading="lazy">
 </section>
 
 <!-- ===================== SECTION 05：店舗情報 ===================== -->
