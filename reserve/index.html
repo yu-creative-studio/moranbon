@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ネット予約｜焼肉 モランボン</title>
-<meta name="description" content="焼肉 モランボン（長野県上田市）のネット予約。日付・時間・人数を選んで、24時間いつでもご予約いただけます。">
+<title>ネット予約</title>
+<meta name="description" content="ネット予約。日付・時間・人数を選んで、24時間いつでもご予約いただけます。">
 <meta name="theme-color" content="#6B7A3E">
-<link rel="icon" href="/images/peony.png">
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
@@ -14,14 +14,14 @@
 </head>
 <body>
 <header class="r-header">
-  <a class="logo" href="/" aria-label="焼肉 モランボン トップへ"><img src="/images/logo.png" alt="焼肉 モランボン 모란봉" width="640" height="434"></a>
-  <a class="tel" href="tel:0268224129"><small>お電話でのご予約</small>0268-22-4129</a>
+  <a class="logo" href="/" aria-label="トップページへ"><img data-shop-logo src="/images/logo.png" alt="" width="640" height="434"></a>
+  <a class="tel" data-shop-tel><small>お電話でのご予約</small><span data-shop="shop.tel"></span></a>
 </header>
 
 <main class="wrap">
   <div class="page-title">
     <h1>ネット予約</h1>
-    <span class="kr" lang="ko">온라인 예약</span>
+    <span class="kr" data-shop-sub="reserve" hidden></span>
     <div class="rule" aria-hidden="true"><i></i></div>
   </div>
 
@@ -29,9 +29,9 @@
   <div id="flow">
     <div class="notice">
       <ul>
-        <li>お席は<strong>2時間制</strong>です。ネット予約は <strong>17:30〜19:30</strong> のご来店で承ります。</li>
-        <li><strong>7名様以上・ご宴会（大部屋）・20:00以降のご来店</strong>はお電話でご予約ください。</li>
-        <li>当日のご予約は、ご来店の1時間前まで受け付けています。</li>
+        <li>お席は<strong data-shop="texts.stay"></strong>です。ネット予約は <strong data-shop="texts.slotsRange"></strong> のご来店で承ります。</li>
+        <li><strong data-shop="texts.phoneOnly"></strong>はお電話でご予約ください。</li>
+        <li>当日のご予約は、<span data-shop="texts.sameDay"></span>受け付けています。</li>
       </ul>
     </div>
 
@@ -56,9 +56,9 @@
       <div class="step-head"><span class="num">三</span><h2 id="h-party">人数</h2><span class="picked" id="picked-party"></span></div>
       <div class="choices choices--party" id="parties"></div>
       <div class="phone-box" id="phone-box" hidden>
-        7名様以上のご予約・ご宴会のご相談は、お電話で承ります。<br>
-        <a href="tel:0268224129">0268-22-4129</a><br>
-        <small>営業時間 17:30〜21:30／定休日 毎週月曜日・第2火曜日</small>
+        <span data-shop="texts.overParty"></span>のご予約・ご宴会のご相談は、お電話で承ります。<br>
+        <a data-shop-tel></a><br>
+        <small data-shop="texts.hoursLine"></small>
       </div>
     </section>
 
@@ -117,7 +117,7 @@
     <div class="notice" style="margin-top:16px">
       <ul>
         <li>確認メールを <strong id="done-email"></strong> にお送りしました。届かない場合は迷惑メールフォルダもご確認ください。</li>
-        <li>キャンセルは<strong>ご来店日の前日 23:59 まで</strong>、<a href="/reserve/cancel/">キャンセルページ</a>から予約番号と電話番号で行えます。当日のキャンセルはお電話（0268-22-4129）でお願いいたします。</li>
+        <li>キャンセルは<strong data-shop="texts.cancelDeadline"></strong>、<a href="/reserve/cancel/">キャンセルページ</a>から予約番号と電話番号で行えます。<span data-shop="texts.cancelAfter"></span>のキャンセルはお電話（<a data-shop-tel></a>）でお願いいたします。</li>
         <li>予約番号はキャンセルのときに必要です。この画面を保存するか、メモしておいてください。</li>
       </ul>
     </div>
@@ -128,12 +128,13 @@
 </main>
 
 <footer class="r-footer">
-  焼肉 モランボン　長野県上田市中央2-13-10　<a href="/privacy/">個人情報の取り扱い</a>
+  <span data-shop="shop.name"></span>　<span data-shop="shop.address"></span>　<a href="/privacy/">個人情報の取り扱い</a>
 </footer>
 
 <script type="module">
+import { loadShop } from '/reserve/shop.js';
 const $ = (s) => document.querySelector(s);
-const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30'];
+let SLOTS = [], MAX_PARTY = 6, STAY = '';
 const WD = '日月火水木金土';
 const state = { today: null, month: null, days: {}, date: null, time: null, party: null };
 
@@ -233,11 +234,11 @@ function renderParties() {
   $('#picked-party').textContent = state.party ? `${state.party}名様` : '';
   $('#phone-box').hidden = state.party !== 'more';
   let html = '';
-  for (let n = 1; n <= 6; n++) {
+  for (let n = 1; n <= MAX_PARTY; n++) {
     const ok = state.time && (n <= 4 ? s.t4 > 0 : s.t6 > 0);
     html += `<button type="button" class="choice${n === state.party ? ' is-selected' : ''}" data-party="${n}" ${ok ? '' : 'disabled'} aria-pressed="${n === state.party}">${n}<small>${ok ? '名様' : '満席'}</small></button>`;
   }
-  html += `<button type="button" class="choice choice--more${state.party === 'more' ? ' is-selected' : ''}" data-party="more">7名以上</button>`;
+  html += `<button type="button" class="choice choice--more${state.party === 'more' ? ' is-selected' : ''}" data-party="more">${MAX_PARTY + 1}名以上</button>`;
   $('#parties').innerHTML = html;
 }
 $('#parties').addEventListener('click', (e) => {
@@ -280,7 +281,7 @@ $('#form').addEventListener('submit', (e) => {
   fe.hidden = true;
   $('#name_kana').value = v.name_kana;
   $('#confirm-list').innerHTML = rows([
-    ['日時', `${dateJaFull(state.date)} ${state.time}〜（2時間制）`],
+    ['日時', `${dateJaFull(state.date)} ${state.time}〜（${STAY}）`],
     ['人数', `${state.party}名様`],
     ['お名前', v.name_kana],
     ['電話番号', v.phone],
@@ -328,6 +329,10 @@ function scrollToStep(s) {
 }
 
 (async function init() {
+  try {
+    const cfg = await loadShop();
+    SLOTS = cfg.web.slots; MAX_PARTY = cfg.web.maxParty; STAY = cfg.texts.stay;
+  } catch (e) { $('#cal-error').textContent = 'お店の情報を読み込めませんでした。時間をおいてお試しください'; $('#cal-error').hidden = false; return; }
   try {
     const r = await api('/api/availability?to=' + new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
     state.today = r.today;

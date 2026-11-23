@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>個人情報の取り扱い｜焼肉 モランボン</title>
+<title>個人情報の取り扱い</title>
 <meta name="theme-color" content="#6B7A3E">
-<link rel="icon" href="/images/peony.png">
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
@@ -18,19 +18,19 @@
 </head>
 <body>
 <header class="r-header">
-  <a class="logo" href="/" aria-label="焼肉 モランボン トップへ"><img src="/images/logo.png" alt="焼肉 モランボン 모란봉" width="640" height="434"></a>
-  <a class="tel" href="tel:0268224129"><small>お問い合わせ</small>0268-22-4129</a>
+  <a class="logo" href="/" aria-label="トップページへ"><img data-shop-logo src="/images/logo.png" alt="" width="640" height="434"></a>
+  <a class="tel" data-shop-tel><small>お問い合わせ</small><span data-shop="shop.tel"></span></a>
 </header>
 <main class="wrap doc">
   <div class="page-title"><h1>個人情報の取り扱い</h1><div class="rule" aria-hidden="true"><i></i></div></div>
-  <!-- ※ 公開前にお店と内容を確認すること（事業者名・保存期間など） -->
-  <p>焼肉 モランボン（以下「当店」）は、ネット予約でお預かりするお客様の個人情報を、以下のとおり取り扱います。</p>
+  <!-- 中身は functions/shop.config.js の privacy・shop から入る。文章の変更が必要ならこのファイルを直す -->
+  <p><span data-shop="privacy.businessName"></span>（以下「当店」）は、ネット予約でお預かりするお客様の個人情報を、以下のとおり取り扱います。</p>
 
   <h2>お預かりする情報</h2>
   <ul><li>お名前（カナ）、電話番号、メールアドレス</li><li>ご来店日時・人数・ご要望（アレルギーなど）</li></ul>
 
   <h2>利用目的</h2>
-  <ul>
+  <ul id="purposes">
     <li>ご予約の受付・管理、ご来店前のご連絡</li>
     <li>予約確認・キャンセル完了・前日のお知らせメールの送信</li>
   </ul>
@@ -41,16 +41,24 @@
   <ul><li>Cloudflare（予約データの保管・予約システムの運用）</li><li>Google（Gmail によるメールの送信）</li></ul>
 
   <h2>保存期間</h2>
-  <p>予約データは、ご来店日から1年を過ぎたものを順次削除します。</p>
+  <p>予約データは、ご来店日から<span id="retention"></span>を過ぎたものを順次削除します。</p>
 
   <h2>開示・訂正・削除のご依頼</h2>
   <p>ご自身の情報の確認・訂正・削除をご希望の場合は、お電話でお申し出ください。ご本人であることを確認したうえで対応します。</p>
 
   <h2>お問い合わせ</h2>
-  <p>焼肉 モランボン<br>長野県上田市中央2-13-10<br>電話 0268-22-4129（17:30〜21:30／定休日 毎週月曜日・第2火曜日）</p>
+  <p><span data-shop="privacy.businessName"></span><br><span data-shop="shop.address"></span><br>電話 <a data-shop-tel></a>（<span data-shop="texts.hoursLine"></span>）</p>
 
-  <p style="margin-top:28px;font-size:12.5px;color:var(--mute)">制定日：2026年●月●日</p>
+  <p style="margin-top:28px;font-size:12.5px;color:var(--mute)">制定日：<span data-shop="privacy.enactedOn"></span></p>
 </main>
 <footer class="r-footer"><a href="/reserve/">ネット予約</a>　<a href="/">トップページ</a></footer>
+<script type="module">
+import { loadShop } from '/reserve/shop.js';
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cfg = await loadShop();
+const d = cfg.privacy.retentionDays;
+document.getElementById('retention').textContent = d % 365 === 0 ? `${d / 365}年` : `${d}日`;
+document.getElementById('purposes').insertAdjacentHTML('beforeend', cfg.privacy.extraPurposes.map((p) => `<li>${esc(p)}</li>`).join(''));
+</script>
 </body>
 </html>

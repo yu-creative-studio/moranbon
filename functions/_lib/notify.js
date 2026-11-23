@@ -1,5 +1,7 @@
 // メール通知は Google Apps Script（お店の Gmail）に任せる。
-// ここでは予約内容を Apps Script のウェブアプリに送るだけ。送信に失敗しても予約自体は成立させる。
+// 件名・本文はここ（_lib/mail.js）で組み立てて送り、Apps Script は受け取ったとおりに送るだけ。
+// 送信に失敗しても予約自体は成立させる。
+import { messagesFor } from './mail.js';
 
 const publicBooking = (b) => ({
   id: b.id, code: b.code, date: b.date, start_time: b.start_time, party_size: b.party_size,
@@ -16,7 +18,11 @@ export async function notify(env, type, booking, origin) {
     const res = await fetch(env.GAS_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ secret: env.GAS_SECRET, type, booking: publicBooking(booking), site: origin }),
+      body: JSON.stringify({
+        version: 2, secret: env.GAS_SECRET, type, site: origin,
+        messages: messagesFor(type, booking, origin),
+        booking: publicBooking(booking), // 参考用（古い Apps Script はこちらから本文を作る）
+      }),
       redirect: 'follow',
     });
     if (!res.ok) console.error('Apps Script へ通知できませんでした', res.status);

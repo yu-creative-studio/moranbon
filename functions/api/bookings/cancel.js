@@ -7,7 +7,7 @@ import { notifyLater } from '../../_lib/notify.js';
 
 const view = (b, now) => ({
   code: b.code, date: b.date, start_time: b.start_time, party_size: b.party_size,
-  name_kana: b.name_kana, status: b.status, cancelable: b.status === 'confirmed' && canCancelOnline(b.date, now),
+  name_kana: b.name_kana, status: b.status, cancelable: b.status === 'confirmed' && canCancelOnline(b.date, b.start_time, now),
 });
 
 export const onRequestPost = handle(async (ctx) => {

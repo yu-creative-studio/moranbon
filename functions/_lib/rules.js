@@ -1,21 +1,21 @@
 // 予約ルール（純粋な計算だけ。DBには触らない）
+// お店ごとに変わる値は functions/shop.config.js にあり、_lib/config.js 経由で読む。
 // 時刻はすべて日本時間で判定する。Workers の実行環境は UTC なので、
 // Date の値に +9時間してから UTC の getter で読む。
+import {
+  SLOTS, STAY_MIN, SAME_DAY_LEAD_MIN, CANCEL_DAYS_BEFORE, MIN_PARTY, MAX_PARTY,
+  OPEN_MIN, CLOSE_MIN, GRID_STEP, CLOSED_DAYS, closedDayLabel, toMin, fromMin, config,
+} from './config.js';
 
-export const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30'];
-export const STAY_MIN = 120;          // 1組2時間制
-export const SAME_DAY_LEAD_MIN = 60;  // 当日は来店1時間前まで
-export const MIN_PARTY = 1;
-export const MAX_PARTY = 6;           // 7名以上は電話
+export { SLOTS, STAY_MIN, SAME_DAY_LEAD_MIN, MIN_PARTY, MAX_PARTY, OPEN_MIN, CLOSE_MIN, GRID_STEP, toMin, fromMin };
 export const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-export const toMin = (hhmm) => {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
+// 新しい予約 [t, t+滞在時間) と重なる時点。予約はすべてマスの刻みに乗っているので、刻みごとに見れば十分
+export const coveredPoints = (startMin, stay = STAY_MIN) => {
+  const out = [];
+  for (let d = 0; d < stay; d += GRID_STEP) out.push(startMin + d);
+  return out;
 };
-
-// 新しい予約 [t, t+120) と重なる時点。開始時刻が30分刻みなので、この4点を見れば十分
-export const coveredPoints = (startMin) => [0, 30, 60, 90].map((d) => startMin + d);
 
 export const tableTypeFor = (party) => (party <= 4 ? 4 : 6);
 
@@ -42,13 +42,17 @@ export const addDays = (dateStr, n) => {
 export const daysBetween = (a, b) =>
   Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
 
-// 定休日：毎週月曜日、第2火曜日（8〜14日の火曜）
-export function regularHoliday(dateStr) {
+// 定休日（shop.config.js の closedDays）。第n◯曜日は「(n-1)*7+1 〜 n*7 日の◯曜日」、最終は「あと7日で月が変わる◯曜日」
+export function regularHoliday(dateStr, rules = CLOSED_DAYS) {
   const d = new Date(dateStr + 'T00:00:00Z');
   const dow = d.getUTCDay();
   const day = d.getUTCDate();
-  if (dow === 1) return '定休日（月曜日）';
-  if (dow === 2 && day >= 8 && day <= 14) return '定休日（第2火曜日）';
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  for (const r of rules) {
+    if (r.dow !== dow) continue;
+    if (r.nth == null) return `定休日（${closedDayLabel(r).replace(/^毎週/, '')}）`;
+    if (r.nth === -1 ? day + 7 > last : day > (r.nth - 1) * 7 && day <= r.nth * 7) return `定休日（${closedDayLabel(r)}）`;
+  }
   return null;
 }
 
@@ -62,15 +66,18 @@ export function dateRejection(dateStr, now, maxDaysAhead) {
   return regularHoliday(dateStr);
 }
 
-// その時刻がもう締め切りか（当日は来店1時間前まで）
+// その時刻がもう締め切りか（当日は来店◯分前まで）
 export function slotPassed(dateStr, slot, now) {
   if (dateStr > now.date) return false;
   if (dateStr < now.date) return true;
   return now.minutes + SAME_DAY_LEAD_MIN > toMin(slot);
 }
 
-// キャンセル期限：来店日の前日 23:59（日本時間）まで
-export const canCancelOnline = (dateStr, now) => now.date < dateStr;
+// ネットでキャンセルできるか。cancelDaysBefore：1＝前日23:59まで、2＝2日前まで、0＝当日の締め切り時刻まで
+export function canCancelOnline(dateStr, startTime, now, daysBefore = CANCEL_DAYS_BEFORE) {
+  if (daysBefore === 0) return !slotPassed(dateStr, startTime, now);
+  return daysBetween(now.date, dateStr) >= daysBefore;
+}
 
 // 予約済みの [開始, 終了) の配列から、時刻 slot に入れる残り数を出す（同時に使っている数で判定）
 export function remainingFor(slot, intervals, cap) {
@@ -86,18 +93,15 @@ export function remainingFor(slot, intervals, cap) {
 export const overlaps = (a1, a2, b1, b2) => a1 < b2 && b1 < a2;
 
 // ---- 予約表（電話予約の手入力） ----
-export const OPEN_MIN = 17 * 60 + 30;   // 17:30
-export const CLOSE_MIN = 21 * 60 + 30;  // 21:30
-export const GRID_STEP = 30;
-export const fromMin = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-
-// 電話予約の時間チェック：17:30〜21:00 開始、30分刻み、閉店 21:30 まで
+// 電話予約の時間チェック：開店〜閉店の間、マスの刻み
 export function phoneTimeError(startMin, endMin) {
   if (!Number.isInteger(startMin) || !Number.isInteger(endMin)) return '時間が正しくありません';
-  if (startMin % GRID_STEP || endMin % GRID_STEP) return '時間は30分刻みで入力してください';
-  if (startMin < OPEN_MIN || startMin >= CLOSE_MIN) return '開始は 17:30〜21:00 の間で入力してください';
+  if (startMin % GRID_STEP || endMin % GRID_STEP) return `時間は${GRID_STEP}分刻みで入力してください`;
+  if (startMin < OPEN_MIN || startMin >= CLOSE_MIN) {
+    return `開始は ${config.hours.open}〜${fromMin(CLOSE_MIN - GRID_STEP)} の間で入力してください`;
+  }
   if (endMin <= startMin) return '終了は開始より後にしてください';
-  if (endMin > CLOSE_MIN) return '終了は閉店（21:30）までにしてください';
+  if (endMin > CLOSE_MIN) return `終了は閉店（${config.hours.close}）までにしてください`;
   return null;
 }
 

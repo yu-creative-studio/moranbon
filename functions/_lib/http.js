@@ -103,7 +103,8 @@ export const clearLoginFails = (db, ip) =>
 
 // Apps Script など内部からの呼び出し（共有シークレット）
 export function requireInternal(request, env) {
-  const given = request.headers.get('x-moranbon-secret') || '';
+  // X-Reserve-Secret（テンプレート版）。古い Apps Script 用に X-Moranbon-Secret も受け付ける
+  const given = request.headers.get('x-reserve-secret') || request.headers.get('x-moranbon-secret') || '';
   if (!env.GAS_SECRET || env.GAS_SECRET.length < 24) throw new HttpError('GAS_SECRET が設定されていません', 500);
   if (!safeEqual(given, env.GAS_SECRET)) throw new HttpError('認証に失敗しました', 403);
 }

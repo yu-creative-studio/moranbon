@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>予約管理｜焼肉 モランボン</title>
+<title>予約管理</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#55622F">
-<link rel="icon" href="/images/peony.png">
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
@@ -166,7 +166,7 @@
 </head>
 <body>
 <header class="r-header">
-  <a class="logo" href="/" aria-label="サイトのトップへ"><img src="/images/logo.png" alt="焼肉 モランボン" width="640" height="434"></a>
+  <a class="logo" href="/" aria-label="サイトのトップへ"><img data-shop-logo src="/images/logo.png" alt="" width="640" height="434"></a>
   <button class="logout" type="button" id="logout" hidden>ログアウト</button>
 </header>
 
@@ -250,12 +250,12 @@
     <div data-panel="settings" class="narrow" hidden>
       <h2 class="h3" style="margin-top:0">ネット予約の枠</h2>
       <div class="set-row">
-        <span class="lbl">ネットに出す 4人卓（1〜4名様）</span>
+        <span class="lbl">ネットに出す 4人卓（<span id="lbl-4"></span>）</span>
         <div class="stepper" data-key="web_cap_4"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
         <span class="hint">同じ時間に、ネットから入れる4人卓の上限です。実際に空いている卓がなければ、上限内でも満席になります。</span>
       </div>
-      <div class="set-row">
-        <span class="lbl">ネットに出す 6人卓（5〜6名様）</span>
+      <div class="set-row" id="row-6">
+        <span class="lbl">ネットに出す 6人卓（<span id="lbl-6"></span>）</span>
         <div class="stepper" data-key="web_cap_6"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
       </div>
       <div class="set-row">
@@ -289,7 +289,7 @@
     <div class="field"><label for="f-party">人数</label>
       <div class="party-step"><button type="button" data-p="-1" aria-label="減らす">−</button><input id="f-party" type="number" inputmode="numeric" min="1" max="60" value="2"><button type="button" data-p="1" aria-label="増やす">＋</button></div>
     </div>
-    <div class="field"><label for="f-name">お名前</label><input id="f-name" maxlength="40" placeholder="例：鈴木 様／上田商事 忘年会" autocomplete="off"></div>
+    <div class="field"><label for="f-name">お名前</label><input id="f-name" maxlength="40" placeholder="例：鈴木 様／○○商事 忘年会" autocomplete="off"></div>
     <div class="field" id="f-phone-wrap"><label for="f-phone">電話番号<span class="opt">任意</span></label><input id="f-phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off"></div>
     <div class="field"><label for="f-note">メモ<span class="opt">任意</span></label><textarea id="f-note" maxlength="300" style="min-height:70px" placeholder="コース、アレルギー、子ども椅子 など"></textarea></div>
     <p class="alert alert--err" id="sheet-error" hidden></p>
@@ -301,10 +301,11 @@
 </dialog>
 
 <script type="module">
+import { loadShop } from '/reserve/shop.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30'];
-const OPEN = 17 * 60 + 30, CLOSE = 21 * 60 + 30, STEP = 30, COLS = (CLOSE - OPEN) / STEP; // 8マス
+// 営業時間・ネットの来店時刻・滞在時間は functions/shop.config.js から読む（起動時に入る）
+let SLOTS = [], OPEN = 0, CLOSE = 0, STEP = 30, COLS = 0, STAY = 120;
 const WD = '日月火水木金土';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const addDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -421,7 +422,7 @@ function renderBoard() {
         <span>${b.party_size}名・${hm(b.start_min)}〜${hm(b.end_min)}${b.note ? '・メモ' : ''}</span>${t.id ? '<i class="grip" data-resize aria-hidden="true"></i>' : ''}</button>`;
     }
   });
-  // ネットの残り（17:30〜19:30）
+  // ネットの残り（ネットで受け付ける来店時刻だけ）
   const fr = rows.length + 2;
   html += `<div class="foot lbl" style="grid-row:${fr};grid-column:1"><span>ネット残り</span><span style="font-weight:400;font-size:10.5px">4人卓 / 6人卓</span></div>`;
   for (let i = 0; i < COLS; i++) {
@@ -555,7 +556,7 @@ function fillTimes(start, end) {
 }
 function fillEnd(start, end) {
   const opts = []; for (let m = start + STEP; m <= CLOSE; m += STEP) opts.push(m);
-  if (!opts.includes(end)) end = Math.min(start + 120, CLOSE);
+  if (!opts.includes(end)) end = Math.min(start + STAY, CLOSE);
   $('#f-end').innerHTML = opts.map((m) => `<option value="${m}" ${m === end ? 'selected' : ''}>${hm(m)}${m === CLOSE ? '（閉店）' : ''}</option>`).join('');
 }
 $('#f-start').addEventListener('change', () => {
@@ -568,7 +569,7 @@ $$('.party-step [data-p]').forEach((b) => b.addEventListener('click', () => {
 
 function openSheet(b, preset = {}) {
   editing = b || null;
-  const t = b ? b : { table_id: preset.table_id, start_min: preset.start_min, end_min: Math.min(CLOSE, preset.start_min + 120), party_size: 2, name_kana: '', phone: '', note: '' };
+  const t = b ? b : { table_id: preset.table_id, start_min: preset.start_min, end_min: Math.min(CLOSE, preset.start_min + STAY), party_size: 2, name_kana: '', phone: '', note: '' };
   $('#sheet-title').textContent = b ? (b.source === 'web' ? 'ネット予約' : '電話予約') : '電話予約を入れる';
   $('#f-table').innerHTML = data.tables.map((x) => `<option value="${x.id}" ${x.id === t.table_id ? 'selected' : ''}>${esc(x.name)}（${x.capacity >= 10 ? '〜' : ''}${x.capacity}名）</option>`).join('')
     + (!data.tables.some((x) => x.id === t.table_id) ? '<option value="" selected disabled>卓を選んでください</option>' : '');
@@ -644,7 +645,7 @@ function renderList() {
 }
 
 // ---------- 臨時休業・貸切 ----------
-$('#cl-slots').innerHTML = SLOTS.map((t) => `<label class="pill"><input type="checkbox" value="${t}"><span>${t}</span></label>`).join('');
+const renderClosureSlots = () => $('#cl-slots').innerHTML = SLOTS.map((t) => `<label class="pill"><input type="checkbox" value="${t}"><span>${t}</span></label>`).join('');
 $$('input[name="cl-scope"]').forEach((r) => r.addEventListener('change', () => { $('#cl-slots').hidden = $('input[name="cl-scope"]:checked').value !== 'slots'; }));
 async function loadClosures() {
   const list = $('#cl-list'); list.innerHTML = '<div class="loading"><span class="spinner"></span>読み込み中</div>';
@@ -796,6 +797,15 @@ async function start() {
   $('#cl-date').min = today; loadDay(current || today);
 }
 (async () => {
+  try {
+    const cfg = await loadShop();
+    SLOTS = cfg.web.slots; OPEN = cfg.hours.openMin; CLOSE = cfg.hours.closeMin; STEP = cfg.hours.step;
+    COLS = (CLOSE - OPEN) / STEP; STAY = cfg.web.stayMinutes;
+    const max = cfg.web.maxParty;
+    $('#lbl-4').textContent = `1〜${Math.min(4, max)}名様`;
+    $('#lbl-6').textContent = max >= 5 ? `5〜${max}名様` : 'ネットでは使いません';
+    renderClosureSlots();
+  } catch { document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="alert alert--err">お店の設定を読み込めませんでした。再読み込みしてください</p>'); return; }
   const r = await fetch('/api/admin/me').then((x) => x.json()).catch(() => ({}));
   today = r.today || nowJst().date;
   r.admin ? start() : showLogin();

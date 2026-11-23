@@ -3,6 +3,7 @@ import {
   SLOTS, STAY_MIN, toMin, fromMin, coveredPoints, remainingFor, overlaps, dateRejection, slotPassed,
   addDays, tableTypeFor, newCode, canCancelOnline, isValidDate, phoneTimeError, MIN_PARTY, MAX_PARTY,
 } from './rules.js';
+import { config, texts, RETENTION_DAYS } from './config.js';
 
 const SETTING_DEFAULTS = { web_cap_4: 2, web_cap_6: 1, max_days_ahead: 0 };
 
@@ -85,7 +86,8 @@ export async function availability(db, from, to, now) {
       return {
         time: t,
         t4: Math.min(remainingFor(t, web(4), settings.web_cap_4), freeWebTables(tables, list, 4, s, e)),
-        t6: Math.min(remainingFor(t, web(6), settings.web_cap_6), freeWebTables(tables, list, 6, s, e)),
+        // ネットの最大人数が4名以下なら、6人卓はネットに出さない
+        t6: MAX_PARTY < 5 ? 0 : Math.min(remainingFor(t, web(6), settings.web_cap_6), freeWebTables(tables, list, 6, s, e)),
       };
     });
     const open = slots.some((s) => s.t4 > 0 || s.t6 > 0);
@@ -104,22 +106,24 @@ export async function createBooking(db, req, guest, now) {
   const { date, time } = req;
   const party = Number(req.party_size);
   if (!isValidDate(date)) return { error: '日付が正しくありません' };
-  if (!SLOTS.includes(time)) return { error: 'ネット予約できる時間は 17:30〜19:30 です' };
+  if (!SLOTS.includes(time)) return { error: `ネット予約できる時間は ${texts.slotsRange} です` };
   if (!Number.isInteger(party) || party < MIN_PARTY || party > MAX_PARTY) {
-    return { error: '7名様以上はお電話でご予約ください' };
+    return { error: `${texts.overParty}はお電話でご予約ください` };
   }
   const settings = await getSettings(db);
   const dateErr = dateRejection(date, now, settings.max_days_ahead);
   if (dateErr) return { error: dateErr };
-  if (slotPassed(date, time, now)) return { error: '当日のご予約は来店時刻の1時間前までです' };
+  if (slotPassed(date, time, now)) return { error: `当日のご予約は${texts.sameDay}です` };
 
   const type = tableTypeFor(party);
   const startMin = toMin(time);
   const pts = coveredPoints(startMin);
   const capKey = type === 4 ? 'web_cap_4' : 'web_cap_6';
+  // 滞在時間のあいだの各時点（?13, ?14, …）で、ネット予約の同時利用数が上限未満か
   const busyAt = (n) => `(SELECT COUNT(*) FROM bookings
         WHERE date = ?2 AND source = 'web' AND table_type = ?5 AND status = 'confirmed'
           AND start_min <= ?${n} AND end_min > ?${n}) < x.cap`;
+  const busyChecks = pts.map((_, i) => busyAt(13 + i)).join(' AND ');
 
   const sql = `
     INSERT INTO bookings (code, source, date, start_time, start_min, end_min, party_size, table_type, table_id,
@@ -134,7 +138,7 @@ export async function createBooking(db, req, guest, now) {
          ) AS x
     WHERE x.tid IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM closures WHERE date = ?2 AND (start_time IS NULL OR start_time = ?3))
-      AND ${busyAt(13)} AND ${busyAt(14)} AND ${busyAt(15)} AND ${busyAt(16)}`;
+      AND ${busyChecks}`;
 
   for (let attempt = 0; attempt < 4; attempt++) {
     const code = newCode();
@@ -226,8 +230,8 @@ export async function guestCancel(db, code, phone, now) {
   const b = await db.prepare("SELECT * FROM bookings WHERE code = ?1 AND phone = ?2 AND source = 'web'").bind(code, phone).first();
   if (!b) return { error: '予約が見つかりません。予約番号と電話番号をご確認ください', status: 404 };
   if (b.status === 'canceled') return { error: 'このご予約はすでにキャンセルされています', status: 409, booking: b };
-  if (!canCancelOnline(b.date, now)) {
-    return { error: '当日のキャンセルはお電話（0268-22-4129）でお願いいたします', status: 409, booking: b };
+  if (!canCancelOnline(b.date, b.start_time, now)) {
+    return { error: `${texts.cancelAfter}のキャンセルはお電話（${config.shop.tel}）でお願いいたします`, status: 409, booking: b };
   }
   return cancelById(db, b.id, 'guest', now);
 }
@@ -273,8 +277,8 @@ export async function markReminded(db, ids) {
   return stmts.length;
 }
 
-// 予約データの保存期間：来店日から365日を過ぎたものを削除
-export async function purgeOld(db, now, keepDays = 365) {
+// 予約データの保存期間：来店日から dataRetentionDays（shop.config.js）を過ぎたものを削除
+export async function purgeOld(db, now, keepDays = RETENTION_DAYS) {
   const cutoff = addDays(now.date, -keepDays);
   const res = await db.prepare('DELETE FROM bookings WHERE date < ?1').bind(cutoff).run();
   await db.prepare('DELETE FROM closures WHERE date < ?1').bind(cutoff).run();
