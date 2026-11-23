@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ネット予約｜焼肉 モランボン</title>
+<meta name="description" content="焼肉 モランボン（長野県上田市）のネット予約。日付・時間・人数を選んで、24時間いつでもご予約いただけます。">
+<meta name="theme-color" content="#6B7A3E">
+<link rel="icon" href="/images/peony.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/reserve/reserve.css">
+</head>
+<body>
+<header class="r-header">
+  <a class="logo" href="/" aria-label="焼肉 モランボン トップへ"><img src="/images/logo.png" alt="焼肉 モランボン 모란봉" width="640" height="434"></a>
+  <a class="tel" href="tel:0268224129"><small>お電話でのご予約</small>0268-22-4129</a>
+</header>
+
+<main class="wrap">
+  <div class="page-title">
+    <h1>ネット予約</h1>
+    <span class="kr" lang="ko">온라인 예약</span>
+    <div class="rule" aria-hidden="true"><i></i></div>
+  </div>
+
+  <!-- 入力〜確認 -->
+  <div id="flow">
+    <div class="notice">
+      <ul>
+        <li>お席は<strong>2時間制</strong>です。ネット予約は <strong>17:30〜19:30</strong> のご来店で承ります。</li>
+        <li><strong>7名様以上・ご宴会（大部屋）・20:00以降のご来店</strong>はお電話でご予約ください。</li>
+        <li>当日のご予約は、ご来店の1時間前まで受け付けています。</li>
+      </ul>
+    </div>
+
+    <section class="step" id="step-date" aria-labelledby="h-date">
+      <div class="step-head"><span class="num">一</span><h2 id="h-date">日付</h2><span class="picked" id="picked-date"></span></div>
+      <div class="cal-nav">
+        <button class="icon-btn" type="button" id="prev" aria-label="前の月"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 5 8l5 5"/></svg></button>
+        <span class="month" id="month" aria-live="polite"></span>
+        <button class="icon-btn" type="button" id="next" aria-label="次の月"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6 3 5 5-5 5"/></svg></button>
+      </div>
+      <div class="cal" id="cal" role="grid" aria-label="日付を選ぶ"></div>
+      <div class="cal-legend"><span>○ 空きあり</span><span>△ 残りわずか</span><span>休 定休日・臨時休業</span><span>× 満席</span></div>
+      <p class="alert alert--err" id="cal-error" hidden></p>
+    </section>
+
+    <section class="step is-locked" id="step-time" aria-labelledby="h-time">
+      <div class="step-head"><span class="num">二</span><h2 id="h-time">時間</h2><span class="picked" id="picked-time"></span></div>
+      <div class="choices" id="times"></div>
+    </section>
+
+    <section class="step is-locked" id="step-party" aria-labelledby="h-party">
+      <div class="step-head"><span class="num">三</span><h2 id="h-party">人数</h2><span class="picked" id="picked-party"></span></div>
+      <div class="choices choices--party" id="parties"></div>
+      <div class="phone-box" id="phone-box" hidden>
+        7名様以上のご予約・ご宴会のご相談は、お電話で承ります。<br>
+        <a href="tel:0268224129">0268-22-4129</a><br>
+        <small>営業時間 17:30〜21:30／定休日 毎週月曜日・第2火曜日</small>
+      </div>
+    </section>
+
+    <section class="step is-locked" id="step-form" aria-labelledby="h-form">
+      <div class="step-head"><span class="num">四</span><h2 id="h-form">お客様情報</h2></div>
+      <form id="form" novalidate>
+        <div class="field" data-f="name_kana">
+          <label for="name_kana">お名前（カナ）<span class="req">必須</span></label>
+          <input id="name_kana" name="name_kana" autocomplete="name" placeholder="ヤマダ タロウ" maxlength="40" required>
+          <p class="err" hidden></p>
+        </div>
+        <div class="field" data-f="phone">
+          <label for="phone">電話番号<span class="req">必須</span></label>
+          <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="090-1234-5678" maxlength="20" required>
+          <p class="hint">当日ご連絡がつく番号をご入力ください。</p>
+          <p class="err" hidden></p>
+        </div>
+        <div class="field" data-f="email">
+          <label for="email">メールアドレス<span class="req">必須</span></label>
+          <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="example@mail.com" maxlength="200" required>
+          <p class="hint">予約確認メールをお送りします。</p>
+          <p class="err" hidden></p>
+        </div>
+        <div class="field" data-f="note">
+          <label for="note">ご要望<span class="opt">任意</span></label>
+          <textarea id="note" name="note" maxlength="300" placeholder="アレルギー、お子さま用の椅子が必要 など"></textarea>
+          <p class="err" hidden></p>
+        </div>
+        <div class="hp" aria-hidden="true"><label>website<input name="website" id="website" tabindex="-1" autocomplete="off"></label></div>
+        <label class="check"><input type="checkbox" id="agree"><span><a href="/privacy/" target="_blank" rel="noopener">個人情報の取り扱い</a>に同意します</span></label>
+        <p class="alert alert--err" id="form-error" hidden></p>
+        <button class="btn" type="submit">入力内容を確認する</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- 確認 -->
+  <section id="confirm" hidden aria-labelledby="h-confirm">
+    <div class="step-head"><span class="num">五</span><h2 id="h-confirm">ご予約内容の確認</h2></div>
+    <div class="summary"><dl id="confirm-list"></dl></div>
+    <p class="alert alert--err" id="submit-error" hidden></p>
+    <div class="btn-row">
+      <button class="btn btn--line" type="button" id="back">修正する</button>
+      <button class="btn" type="button" id="submit">この内容で予約する</button>
+    </div>
+  </section>
+
+  <!-- 完了 -->
+  <section id="done" hidden aria-live="polite">
+    <div class="done-head">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+      <h2>ご予約を承りました</h2>
+      <p>ご来店を心よりお待ちしております。</p>
+    </div>
+    <div class="summary"><dl id="done-list"></dl></div>
+    <div class="notice" style="margin-top:16px">
+      <ul>
+        <li>確認メールを <strong id="done-email"></strong> にお送りしました。届かない場合は迷惑メールフォルダもご確認ください。</li>
+        <li>キャンセルは<strong>ご来店日の前日 23:59 まで</strong>、<a href="/reserve/cancel/">キャンセルページ</a>から予約番号と電話番号で行えます。当日のキャンセルはお電話（0268-22-4129）でお願いいたします。</li>
+        <li>予約番号はキャンセルのときに必要です。この画面を保存するか、メモしておいてください。</li>
+      </ul>
+    </div>
+    <div class="btn-row" style="grid-template-columns:1fr; margin-top:20px">
+      <a class="btn btn--line" href="/">トップページへ戻る</a>
+    </div>
+  </section>
+</main>
+
+<footer class="r-footer">
+  焼肉 モランボン　長野県上田市中央2-13-10　<a href="/privacy/">個人情報の取り扱い</a>
+</footer>
+
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30'];
+const WD = '日月火水木金土';
+const state = { today: null, month: null, days: {}, date: null, time: null, party: null };
+
+const pad = (n) => String(n).padStart(2, '0');
+const ymd = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return { y, m, d }; };
+const lastDay = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const dow = (s) => new Date(s + 'T00:00:00Z').getUTCDay();
+const dateJa = (s) => { const { m, d } = parse(s); return `${m}月${d}日（${WD[dow(s)]}）`; };
+const dateJaFull = (s) => { const { y } = parse(s); return `${y}年${dateJa(s)}`; };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function api(path, opt) {
+  const res = await fetch(path, opt);
+  let body = null; try { body = await res.json(); } catch {}
+  if (!res.ok || !body?.ok) { const e = new Error(body?.error || '通信に失敗しました。電波の良い場所でもう一度お試しください'); e.status = res.status; e.body = body; throw e; }
+  return body;
+}
+
+// ---------- 一：日付 ----------
+async function loadMonth() {
+  const { y, m } = state.month;
+  $('#month').textContent = `${y}年 ${m}月`;
+  const t = parse(state.today);
+  $('#prev').disabled = y === t.y && m === t.m;
+  const from = ymd(y, m, 1) < state.today ? state.today : ymd(y, m, 1);
+  const to = ymd(y, m, lastDay(y, m));
+  renderCal(true);
+  try {
+    const r = await api(`/api/availability?from=${from}&to=${to}`);
+    for (const d of r.days) state.days[d.date] = d;
+    $('#cal-error').hidden = true;
+  } catch (e) { $('#cal-error').textContent = e.message; $('#cal-error').hidden = false; }
+  renderCal(false);
+}
+
+function dayMark(info) {
+  if (!info) return { s: '', ok: false };
+  if (!info.open) return { s: /満席/.test(info.reason) ? '×' : '休', ok: false };
+  const free = info.slots.filter((x) => x.t4 + x.t6 > 0).length;
+  return { s: free <= 1 ? '△' : '○', ok: true };
+}
+
+function renderCal(loading) {
+  const { y, m } = state.month;
+  const cal = $('#cal');
+  const head = [...WD].map((w, i) => `<div class="dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}" role="columnheader">${w}</div>`).join('');
+  const first = dow(ymd(y, m, 1));
+  let cells = '';
+  for (let i = 0; i < first; i++) cells += '<button class="day is-blank" disabled tabindex="-1" aria-hidden="true"></button>';
+  for (let d = 1; d <= lastDay(y, m); d++) {
+    const ds = ymd(y, m, d);
+    const past = ds < state.today;
+    const mark = past ? { s: '', ok: false } : loading ? { s: '…', ok: false } : dayMark(state.days[ds]);
+    const sel = ds === state.date ? ' is-selected' : '';
+    const label = `${m}月${d}日 ${past ? '' : mark.ok ? '空きあり' : state.days[ds]?.reason || ''}`;
+    cells += `<button type="button" class="day${sel}" data-date="${ds}" ${mark.ok ? '' : 'disabled'} aria-label="${esc(label)}" aria-pressed="${!!sel}"><span class="d">${d}</span><span class="s">${mark.s}</span></button>`;
+  }
+  cal.innerHTML = head + cells;
+}
+
+$('#cal').addEventListener('click', (e) => {
+  const b = e.target.closest('.day[data-date]'); if (!b || b.disabled) return;
+  pickDate(b.dataset.date);
+});
+$('#prev').addEventListener('click', () => { const { y, m } = state.month; state.month = m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 }; loadMonth(); });
+$('#next').addEventListener('click', () => { const { y, m } = state.month; state.month = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 }; loadMonth(); });
+
+function pickDate(ds) {
+  state.date = ds; state.time = null; state.party = null;
+  $('#picked-date').textContent = dateJa(ds);
+  renderCal(false); renderTimes(); renderParties();
+  unlock('#step-time'); lock('#step-party'); lock('#step-form');
+  scrollToStep('#step-time');
+}
+
+// ---------- 二：時間 ----------
+function slotOf(t) { return state.days[state.date]?.slots.find((s) => s.time === t) || { t4: 0, t6: 0 }; }
+function renderTimes() {
+  $('#picked-time').textContent = state.time || '';
+  $('#times').innerHTML = SLOTS.map((t) => {
+    const s = slotOf(t), left = s.t4 + s.t6;
+    const note = left === 0 ? '満席' : left === 1 ? '残りわずか' : '空きあり';
+    return `<button type="button" class="choice${t === state.time ? ' is-selected' : ''}" data-time="${t}" ${left ? '' : 'disabled'} aria-pressed="${t === state.time}">${t}<small>${note}</small></button>`;
+  }).join('');
+}
+$('#times').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-time]'); if (!b || b.disabled) return;
+  state.time = b.dataset.time; state.party = null;
+  renderTimes(); renderParties(); unlock('#step-party'); lock('#step-form');
+  scrollToStep('#step-party');
+});
+
+// ---------- 三：人数 ----------
+function renderParties() {
+  const s = slotOf(state.time);
+  $('#picked-party').textContent = state.party ? `${state.party}名様` : '';
+  $('#phone-box').hidden = state.party !== 'more';
+  let html = '';
+  for (let n = 1; n <= 6; n++) {
+    const ok = state.time && (n <= 4 ? s.t4 > 0 : s.t6 > 0);
+    html += `<button type="button" class="choice${n === state.party ? ' is-selected' : ''}" data-party="${n}" ${ok ? '' : 'disabled'} aria-pressed="${n === state.party}">${n}<small>${ok ? '名様' : '満席'}</small></button>`;
+  }
+  html += `<button type="button" class="choice choice--more${state.party === 'more' ? ' is-selected' : ''}" data-party="more">7名以上</button>`;
+  $('#parties').innerHTML = html;
+}
+$('#parties').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-party]'); if (!b || b.disabled) return;
+  const v = b.dataset.party;
+  state.party = v === 'more' ? 'more' : Number(v);
+  renderParties();
+  if (state.party === 'more') { lock('#step-form'); return; }
+  unlock('#step-form'); scrollToStep('#step-form');
+});
+
+// ---------- 四：お客様情報 ----------
+const FIELDS = ['name_kana', 'phone', 'email', 'note'];
+const toKana = (s) => s.replace(/[ぁ-ゖ]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/\s+/g, ' ').trim();
+const digits = (s) => s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '');
+function check() {
+  const v = Object.fromEntries(FIELDS.map((f) => [f, $('#' + f).value]));
+  v.name_kana = toKana(v.name_kana);
+  const err = {};
+  if (!v.name_kana) err.name_kana = 'お名前（カナ）を入力してください';
+  else if (!/^[ァ-ヶー・ 　]+$/.test(v.name_kana)) err.name_kana = 'カタカナで入力してください';
+  if (!/^0\d{9,10}$/.test(digits(v.phone))) err.phone = '電話番号を正しく入力してください（例：090-1234-5678）';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) err.email = 'メールアドレスを正しく入力してください';
+  return { v, err };
+}
+function showErrors(err) {
+  for (const f of FIELDS) {
+    const box = document.querySelector(`.field[data-f="${f}"]`), p = box.querySelector('.err');
+    box.classList.toggle('has-err', !!err[f]); p.hidden = !err[f]; p.textContent = err[f] || '';
+    $('#' + f).setAttribute('aria-invalid', err[f] ? 'true' : 'false');
+  }
+}
+$('#form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const { v, err } = check();
+  showErrors(err);
+  const fe = $('#form-error');
+  if (Object.keys(err).length) { fe.textContent = '入力内容をご確認ください'; fe.hidden = false; document.querySelector('.has-err input, .has-err textarea')?.focus(); return; }
+  if (!$('#agree').checked) { fe.textContent = '個人情報の取り扱いに同意してください'; fe.hidden = false; return; }
+  fe.hidden = true;
+  $('#name_kana').value = v.name_kana;
+  $('#confirm-list').innerHTML = rows([
+    ['日時', `${dateJaFull(state.date)} ${state.time}〜（2時間制）`],
+    ['人数', `${state.party}名様`],
+    ['お名前', v.name_kana],
+    ['電話番号', v.phone],
+    ['メール', v.email],
+    ['ご要望', v.note || 'なし'],
+  ]);
+  $('#flow').hidden = true; $('#confirm').hidden = false; $('#submit-error').hidden = true;
+  scrollTo({ top: 0 });
+});
+const rows = (list) => list.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v).replace(/\n/g, '<br>')}</dd></div>`).join('');
+
+$('#back').addEventListener('click', () => { $('#confirm').hidden = true; $('#flow').hidden = false; scrollToStep('#step-form'); });
+
+$('#submit').addEventListener('click', async () => {
+  const btn = $('#submit'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>送信しています';
+  const { v } = check();
+  try {
+    const r = await api('/api/bookings', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ date: state.date, time: state.time, party_size: state.party, ...v, agree: true, website: $('#website').value }),
+    });
+    const b = r.booking;
+    $('#done-list').innerHTML = `<div><dt>予約番号</dt><dd><span class="code">${esc(b.code)}</span></dd></div>` + rows([
+      ['日時', `${dateJaFull(b.date)} ${b.start_time}〜`], ['人数', `${b.party_size}名様`], ['お名前', b.name_kana],
+    ]);
+    $('#done-email').textContent = b.email;
+    $('#confirm').hidden = true; $('#done').hidden = false; scrollTo({ top: 0 });
+  } catch (e) {
+    const se = $('#submit-error');
+    se.textContent = e.status === 422 ? '入力内容をご確認ください' : e.message; se.hidden = false;
+    if (e.status === 422 && e.body?.fields) { $('#confirm').hidden = true; $('#flow').hidden = false; showErrors(e.body.fields); scrollToStep('#step-form'); }
+    if (e.status === 409) { // 満席になった → 空き状況を取り直す
+      state.days = {}; state.time = null; state.party = null; await loadMonth(); renderTimes(); renderParties();
+      lock('#step-party'); lock('#step-form');
+    }
+  } finally { btn.disabled = false; btn.textContent = 'この内容で予約する'; }
+});
+
+// ---------- 共通 ----------
+function lock(s) { $(s).classList.add('is-locked'); $(s).setAttribute('aria-disabled', 'true'); }
+function unlock(s) { $(s).classList.remove('is-locked'); $(s).removeAttribute('aria-disabled'); }
+function scrollToStep(s) {
+  const el = $(s); const top = el.getBoundingClientRect().top + scrollY - 76;
+  scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+(async function init() {
+  try {
+    const r = await api('/api/availability?to=' + new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+    state.today = r.today;
+  } catch (e) {
+    state.today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    $('#cal-error').textContent = e.message; $('#cal-error').hidden = false;
+  }
+  const t = parse(state.today); state.month = { y: t.y, m: t.m };
+  renderTimes(); renderParties();
+  await loadMonth();
+})();
+</script>
+</body>
+</html>

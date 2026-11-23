@@ -1,0 +1,3 @@
+setup/dev/dev.sqlite*
+node_modules/
+.DS_Store

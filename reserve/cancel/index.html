@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>予約のキャンセル｜焼肉 モランボン</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#6B7A3E">
+<link rel="icon" href="/images/peony.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/reserve/reserve.css">
+</head>
+<body>
+<header class="r-header">
+  <a class="logo" href="/" aria-label="焼肉 モランボン トップへ"><img src="/images/logo.png" alt="焼肉 モランボン 모란봉" width="640" height="434"></a>
+  <a class="tel" href="tel:0268224129"><small>お電話でのお問い合わせ</small>0268-22-4129</a>
+</header>
+
+<main class="wrap">
+  <div class="page-title">
+    <h1>予約のキャンセル</h1>
+    <span class="kr" lang="ko">예약 취소</span>
+    <div class="rule" aria-hidden="true"><i></i></div>
+  </div>
+
+  <section id="find">
+    <div class="notice"><ul>
+      <li>ネットでのキャンセルは<strong>ご来店日の前日 23:59 まで</strong>です。</li>
+      <li>当日のキャンセル・人数や時間の変更は、お電話（<a href="tel:0268224129">0268-22-4129</a>）でお願いいたします。</li>
+    </ul></div>
+    <form id="find-form" novalidate style="margin-top:22px">
+      <div class="field">
+        <label for="code">予約番号（8桁）<span class="req">必須</span></label>
+        <input id="code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="例：AB3CD7EF" style="letter-spacing:.14em; text-transform:uppercase">
+      </div>
+      <div class="field">
+        <label for="phone">ご予約時の電話番号<span class="req">必須</span></label>
+        <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="090-1234-5678">
+      </div>
+      <p class="alert alert--err" id="find-error" hidden></p>
+      <button class="btn" type="submit">予約を確認する</button>
+    </form>
+  </section>
+
+  <section id="detail" hidden>
+    <div class="summary"><dl id="detail-list"></dl></div>
+    <p class="alert alert--err" id="detail-error" hidden></p>
+    <div class="btn-row" id="detail-actions">
+      <button class="btn btn--line" type="button" id="back">戻る</button>
+      <button class="btn btn--danger" type="button" id="do-cancel">この予約をキャンセルする</button>
+    </div>
+  </section>
+
+  <section id="done" hidden aria-live="polite">
+    <div class="done-head">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+      <h2>キャンセルしました</h2>
+      <p>キャンセル完了のメールをお送りしました。またのご来店をお待ちしております。</p>
+    </div>
+    <div class="btn-row" style="grid-template-columns:1fr">
+      <a class="btn" href="/reserve/">別の日時で予約する</a>
+      <a class="btn btn--line" href="/">トップページへ戻る</a>
+    </div>
+  </section>
+</main>
+
+<footer class="r-footer">焼肉 モランボン　<a href="/privacy/">個人情報の取り扱い</a></footer>
+
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const WD = '日月火水木金土';
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dateJa = (s) => { const [y, m, d] = s.split('-').map(Number); return `${y}年${m}月${d}日（${WD[new Date(s + 'T00:00:00Z').getUTCDay()]}）`; };
+const normCode = (s) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+const qs = new URLSearchParams(location.search);
+if (qs.get('code')) $('#code').value = normCode(qs.get('code'));
+($('#code').value ? $('#phone') : $('#code')).focus({ preventScroll: true });
+
+async function call(action) {
+  const res = await fetch('/api/bookings/cancel', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action, code: normCode($('#code').value), phone: $('#phone').value }),
+  });
+  let body = null; try { body = await res.json(); } catch {}
+  if (!res.ok || !body?.ok) { const e = new Error(body?.error || '通信に失敗しました。もう一度お試しください'); e.body = body; throw e; }
+  return body.booking;
+}
+
+function show(b) {
+  const status = b.status === 'canceled' ? 'キャンセル済み' : b.cancelable ? 'ご予約中' : 'ご予約中（当日のためネットではキャンセルできません）';
+  $('#detail-list').innerHTML = [
+    ['予約番号', b.code], ['日時', `${dateJa(b.date)} ${b.start_time}〜`], ['人数', `${b.party_size}名様`], ['お名前', b.name_kana], ['状態', status],
+  ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
+  $('#do-cancel').hidden = !b.cancelable;
+  const de = $('#detail-error');
+  if (!b.cancelable && b.status === 'confirmed') { de.innerHTML = '当日のキャンセルはお電話（<a href="tel:0268224129">0268-22-4129</a>）でお願いいたします。'; de.hidden = false; }
+  else de.hidden = true;
+  $('#find').hidden = true; $('#detail').hidden = false;
+}
+
+$('#find-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fe = $('#find-error');
+  if (normCode($('#code').value).length !== 8 || $('#phone').value.replace(/\D/g, '').length < 10) {
+    fe.textContent = '予約番号（8桁）と電話番号を入力してください'; fe.hidden = false; return;
+  }
+  const btn = e.submitter; btn.disabled = true;
+  try { show(await call('lookup')); fe.hidden = true; }
+  catch (err) { fe.textContent = err.message; fe.hidden = false; }
+  finally { btn.disabled = false; }
+});
+$('#back').addEventListener('click', () => { $('#detail').hidden = true; $('#find').hidden = false; });
+$('#do-cancel').addEventListener('click', async () => {
+  const btn = $('#do-cancel');
+  if (btn.dataset.armed !== '1') { btn.dataset.armed = '1'; btn.textContent = 'もう一度押すとキャンセルします'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>処理しています';
+  try { await call('cancel'); $('#detail').hidden = true; $('#done').hidden = false; scrollTo({ top: 0 }); }
+  catch (err) { $('#detail-error').textContent = err.message; $('#detail-error').hidden = false; if (err.body?.booking) show(err.body.booking); }
+  finally { btn.disabled = false; btn.dataset.armed = ''; btn.textContent = 'この予約をキャンセルする'; }
+});
+</script>
+</body>
+</html>

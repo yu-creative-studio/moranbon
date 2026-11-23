@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>予約管理｜焼肉 モランボン</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#55622F">
+<link rel="icon" href="/images/peony.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/reserve/reserve.css">
+<style>
+  .tabs{ display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line-strong); margin-bottom:22px; }
+  .tabs button{ min-height:50px; border:0; background:var(--card); cursor:pointer; font-size:14px; letter-spacing:.06em; }
+  .tabs button + button{ border-left:1px solid var(--line-strong); }
+  .tabs button[aria-selected="true"]{ background:var(--moss-deep); color:#fff; }
+  .seg{ display:grid; grid-template-columns:1fr 1fr 1.4fr; gap:8px; margin-bottom:14px; }
+  .seg button,.seg input{ min-height:48px; border:1px solid var(--line-strong); background:var(--card); font-size:15px; cursor:pointer; padding:0 8px; border-radius:0; width:100%; }
+  .seg button[aria-pressed="true"]{ background:var(--moss-deep); border-color:var(--moss-deep); color:#fff; }
+  .day-title{ font-family:var(--serif); font-size:20px; letter-spacing:.08em; margin:4px 0 10px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .day-title small{ font-family:var(--sans); font-size:12.5px; color:var(--rouge); letter-spacing:.04em; }
+  .slots{ width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; margin-bottom:22px; background:var(--card); }
+  .slots th,.slots td{ border:1px solid var(--line); padding:9px 6px; text-align:center; font-size:14px; }
+  .slots th{ font-weight:500; font-size:12.5px; color:var(--moss-deep); background:rgba(107,122,62,.07); }
+  .slots td.full{ color:#A3392B; font-weight:500; }
+  .slots td.closed{ color:var(--mute); font-size:12px; }
+  .bk{ border:1px solid var(--line-strong); background:var(--card); padding:14px 16px; display:grid; gap:4px; }
+  .bk + .bk{ margin-top:10px; }
+  .bk .top{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .bk .time{ font-family:var(--serif); font-size:22px; font-variant-numeric:tabular-nums; }
+  .bk .party{ font-size:15px; font-weight:500; }
+  .bk .tag{ font-size:11px; border:1px solid var(--line-strong); padding:0 6px; color:var(--ink-soft); }
+  .bk .name{ font-size:16px; }
+  .bk .meta{ font-size:13px; color:var(--ink-soft); display:flex; gap:4px 14px; flex-wrap:wrap; }
+  .bk .meta a{ font-size:15px; }
+  .bk .note{ font-size:13.5px; background:rgba(180,90,74,.07); padding:6px 10px; border-left:2px solid var(--rouge); white-space:pre-wrap; overflow-wrap:anywhere; }
+  .bk .actions{ display:flex; justify-content:flex-end; margin-top:6px; }
+  .bk.is-canceled{ opacity:.55; }
+  .bk.is-canceled .time{ text-decoration:line-through; }
+  .empty{ text-align:center; color:var(--mute); padding:28px 0; border:1px dashed var(--line-strong); font-size:14px; }
+  .radio-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .pill{ position:relative; }
+  .pill input{ position:absolute; opacity:0; }
+  .pill span{ display:inline-flex; align-items:center; min-height:44px; padding:0 14px; border:1px solid var(--line-strong); background:var(--card); cursor:pointer; font-size:14px; font-variant-numeric:tabular-nums; }
+  .pill input:checked + span{ background:var(--moss-deep); border-color:var(--moss-deep); color:#fff; }
+  .pill input:focus-visible + span{ outline:2px solid var(--moss); outline-offset:2px; }
+  .cl-item{ display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line-strong); background:var(--card); }
+  .cl-item + .cl-item{ margin-top:8px; }
+  .cl-item .what{ flex:1; min-width:0; }
+  .cl-item .what b{ font-weight:500; }
+  .cl-item .what small{ display:block; color:var(--mute); }
+  .stepper{ display:grid; grid-template-columns:56px 1fr 56px; border:1px solid var(--line-strong); background:var(--card); }
+  .stepper button{ min-height:56px; border:0; background:transparent; font-size:24px; cursor:pointer; }
+  .stepper output{ display:grid; place-items:center; font-family:var(--serif); font-size:24px; font-variant-numeric:tabular-nums; border-inline:1px solid var(--line); }
+  .set-row{ display:grid; gap:8px; margin-bottom:22px; }
+  .set-row .lbl{ font-weight:500; }
+  .set-row .hint{ font-size:12.5px; color:var(--mute); }
+  .h3{ font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:.1em; margin:26px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line-strong); }
+  .logout{ background:none; border:0; color:var(--mute); font-size:12px; text-decoration:underline; cursor:pointer; padding:8px; }
+</style>
+</head>
+<body>
+<header class="r-header">
+  <a class="logo" href="/" aria-label="サイトのトップへ"><img src="/images/logo.png" alt="焼肉 モランボン" width="640" height="434"></a>
+  <button class="logout" type="button" id="logout" hidden>ログアウト</button>
+</header>
+
+<main class="wrap">
+  <div class="page-title"><h1>予約管理</h1><div class="rule" aria-hidden="true"><i></i></div></div>
+
+  <!-- ログイン -->
+  <section id="login" hidden>
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="password">パスワード</label>
+        <input id="password" type="password" autocomplete="current-password">
+      </div>
+      <p class="alert alert--err" id="login-error" hidden></p>
+      <button class="btn" type="submit">ログイン</button>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="list">予約一覧</button>
+      <button role="tab" aria-selected="false" data-tab="closures">休業・貸切</button>
+      <button role="tab" aria-selected="false" data-tab="settings">設定</button>
+    </div>
+
+    <!-- 予約一覧 -->
+    <div data-panel="list">
+      <div class="seg">
+        <button type="button" data-day="0" aria-pressed="true">今日</button>
+        <button type="button" data-day="1" aria-pressed="false">明日</button>
+        <input type="date" id="pick-date" aria-label="日付を選ぶ">
+      </div>
+      <div id="list-body"><div class="loading"><span class="spinner"></span>読み込み中</div></div>
+    </div>
+
+    <!-- 臨時休業・貸切 -->
+    <div data-panel="closures" hidden>
+      <form id="cl-form" novalidate>
+        <div class="field"><label for="cl-date">日付</label><input type="date" id="cl-date" required></div>
+        <div class="field">
+          <label>止める範囲</label>
+          <div class="radio-row">
+            <label class="pill"><input type="radio" name="cl-scope" value="all" checked><span>終日（臨時休業・貸切）</span></label>
+            <label class="pill"><input type="radio" name="cl-scope" value="slots"><span>時間帯を選ぶ</span></label>
+          </div>
+          <div class="radio-row" id="cl-slots" hidden style="margin-top:8px"></div>
+        </div>
+        <div class="field"><label for="cl-reason">メモ<span class="opt">任意</span></label><input id="cl-reason" maxlength="60" placeholder="例：貸切（○○様）"></div>
+        <p class="alert alert--err" id="cl-error" hidden></p>
+        <button class="btn" type="submit">ネット予約を止める</button>
+      </form>
+      <h2 class="h3">設定中の休業・貸切</h2>
+      <div id="cl-list"></div>
+    </div>
+
+    <!-- 設定 -->
+    <div data-panel="settings" hidden>
+      <div class="set-row">
+        <span class="lbl">ネットに出す 4人卓（1〜4名様）</span>
+        <div class="stepper" data-key="web_cap_4"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
+        <span class="hint">同じ時間に、ネットから入れる4人卓の数です。</span>
+      </div>
+      <div class="set-row">
+        <span class="lbl">ネットに出す 6人卓（5〜6名様）</span>
+        <div class="stepper" data-key="web_cap_6"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
+      </div>
+      <div class="set-row">
+        <span class="lbl">何日先まで受け付けるか</span>
+        <div class="stepper" data-key="max_days_ahead" data-step="7"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
+        <span class="hint">0 のときは制限なし。7日ずつ増減します。</span>
+      </div>
+      <p class="alert" id="set-msg" hidden></p>
+      <button class="btn" type="button" id="set-save">保存する</button>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30'];
+const WD = '日月火水木金土';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const addDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const dateJa = (s) => { const [y, m, d] = s.split('-').map(Number); return `${m}月${d}日（${WD[new Date(s + 'T00:00:00Z').getUTCDay()]}）`; };
+const phoneFmt = (p) => p.length === 11 ? `${p.slice(0, 3)}-${p.slice(3, 7)}-${p.slice(7)}` : p.length === 10 ? `${p.slice(0, 4)}-${p.slice(4, 6)}-${p.slice(6)}` : p;
+let today = null, current = null, settings = null;
+
+async function api(path, opt = {}) {
+  const res = await fetch(path, { credentials: 'same-origin', ...opt, headers: { 'content-type': 'application/json', ...(opt.headers || {}) } });
+  let body = null; try { body = await res.json(); } catch {}
+  if (res.status === 401) { showLogin(); throw new Error('ログインしてください'); }
+  if (!res.ok || !body?.ok) throw new Error(body?.error || '通信に失敗しました');
+  return body;
+}
+
+// 2回押すと実行するボタン（誤操作防止）
+function twoStep(btn, label, run) {
+  btn.addEventListener('click', async () => {
+    if (btn.dataset.armed !== '1') {
+      btn.dataset.armed = '1'; const old = btn.textContent; btn.textContent = label;
+      setTimeout(() => { if (btn.isConnected && btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.textContent = old; } }, 4000);
+      return;
+    }
+    btn.disabled = true; try { await run(); } catch (e) { alertBox(e.message); } finally { btn.disabled = false; }
+  });
+}
+function alertBox(msg) { const p = $('#list-body .alert--err') || null; if (p) { p.textContent = msg; p.hidden = false; } else console.warn(msg); }
+
+// ---------- ログイン ----------
+function showLogin() { $('#app').hidden = true; $('#login').hidden = false; $('#logout').hidden = true; $('#password').focus(); }
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault(); const le = $('#login-error'); const btn = e.submitter; btn.disabled = true;
+  try {
+    const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: $('#password').value }) });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'ログインできませんでした');
+    $('#password').value = ''; le.hidden = true; start();
+  } catch (err) { le.textContent = err.message; le.hidden = false; }
+  finally { btn.disabled = false; }
+});
+$('#logout').addEventListener('click', async () => { await fetch('/api/admin/logout', { method: 'POST' }); showLogin(); });
+
+// ---------- タブ ----------
+$$('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => {
+  $$('.tabs [data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+  $$('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+  if (b.dataset.tab === 'closures') loadClosures();
+  if (b.dataset.tab === 'settings') loadSettings();
+}));
+
+// ---------- 予約一覧 ----------
+$$('.seg [data-day]').forEach((b) => b.addEventListener('click', () => loadDay(addDays(today, Number(b.dataset.day)))));
+$('#pick-date').addEventListener('change', (e) => e.target.value && loadDay(e.target.value));
+
+async function loadDay(date) {
+  current = date;
+  $$('.seg [data-day]').forEach((b) => b.setAttribute('aria-pressed', String(addDays(today, Number(b.dataset.day)) === date)));
+  $('#pick-date').value = date;
+  const box = $('#list-body');
+  box.innerHTML = '<div class="loading"><span class="spinner"></span>読み込み中</div>';
+  try {
+    const r = await api('/api/admin/bookings?date=' + date);
+    const active = r.bookings.filter((b) => b.status === 'confirmed');
+    const people = active.reduce((n, b) => n + b.party_size, 0);
+    let html = `<p class="alert alert--err" hidden></p>
+      <div class="day-title">${dateJa(date)}<small>${esc(r.holiday || (!r.day.open && r.day.reason !== '満席' ? r.day.reason : '') || '')}</small></div>
+      <p style="margin:-4px 0 12px;font-size:13.5px;color:var(--ink-soft)">ネット予約 ${active.length}組・${people}名様</p>`;
+    if (r.day.slots.length) {
+      html += `<table class="slots"><thead><tr><th>開始</th><th>4人卓の残り</th><th>6人卓の残り</th></tr></thead><tbody>` +
+        r.day.slots.map((s) => {
+          const c = (n, cap) => `<td class="${n === 0 ? 'full' : ''}">${n === 0 ? '満' : n}<span style="color:var(--mute);font-size:11px"> / ${cap}</span></td>`;
+          return `<tr><th scope="row">${s.time}</th>${c(s.t4, r.settings.web_cap_4)}${c(s.t6, r.settings.web_cap_6)}</tr>`;
+        }).join('') + '</tbody></table>';
+    }
+    if (!r.bookings.length) html += '<div class="empty">ネット予約はまだありません</div>';
+    html += r.bookings.map((b) => `
+      <article class="bk${b.status === 'canceled' ? ' is-canceled' : ''}">
+        <div class="top"><span class="time">${b.start_time}</span><span class="party">${b.party_size}名様</span><span class="tag">${b.table_type}人卓</span>
+          ${b.status === 'canceled' ? `<span class="tag">キャンセル済（${b.canceled_by === 'admin' ? 'お店' : 'お客様'}）</span>` : ''}</div>
+        <div class="name">${esc(b.name_kana)} 様</div>
+        <div class="meta"><a href="tel:${esc(b.phone)}">${esc(phoneFmt(b.phone))}</a><span>${esc(b.email)}</span><span>予約番号 ${esc(b.code)}</span></div>
+        ${b.note ? `<div class="note">${esc(b.note)}</div>` : ''}
+        ${b.status === 'confirmed' ? `<div class="actions"><button class="btn btn--line btn--sm" type="button" data-cancel="${b.id}">取り消す</button></div>` : ''}
+      </article>`).join('');
+    box.innerHTML = html;
+    $$('[data-cancel]', box).forEach((btn) => twoStep(btn, 'もう一度押すと取り消します', async () => {
+      await api(`/api/admin/bookings/${btn.dataset.cancel}/cancel`, { method: 'POST' }); loadDay(current);
+    }));
+  } catch (e) { box.innerHTML = `<p class="alert alert--err">${esc(e.message)}</p>`; }
+}
+
+// ---------- 臨時休業・貸切 ----------
+$('#cl-slots').innerHTML = SLOTS.map((t) => `<label class="pill"><input type="checkbox" value="${t}"><span>${t}</span></label>`).join('');
+$$('input[name="cl-scope"]').forEach((r) => r.addEventListener('change', () => { $('#cl-slots').hidden = $('input[name="cl-scope"]:checked').value !== 'slots'; }));
+
+async function loadClosures() {
+  const list = $('#cl-list'); list.innerHTML = '<div class="loading"><span class="spinner"></span>読み込み中</div>';
+  try {
+    const { closures } = await api('/api/admin/closures');
+    list.innerHTML = closures.length ? closures.map((c) => `
+      <div class="cl-item"><div class="what"><b>${dateJa(c.date)}</b> ${c.start_time ? c.start_time + '〜 の枠' : '終日'}<small>${esc(c.reason)}</small></div>
+      <button class="btn btn--line btn--sm" type="button" data-del="${c.id}">解除</button></div>`).join('')
+      : '<div class="empty">設定中の休業・貸切はありません</div>';
+    $$('[data-del]', list).forEach((btn) => twoStep(btn, 'もう一度押すと解除', async () => {
+      await api('/api/admin/closures?id=' + btn.dataset.del, { method: 'DELETE' }); loadClosures();
+    }));
+  } catch (e) { list.innerHTML = `<p class="alert alert--err">${esc(e.message)}</p>`; }
+}
+$('#cl-form').addEventListener('submit', async (e) => {
+  e.preventDefault(); const ce = $('#cl-error'); ce.hidden = true;
+  const date = $('#cl-date').value;
+  const scope = $('input[name="cl-scope"]:checked').value;
+  const times = $$('#cl-slots input:checked').map((i) => i.value);
+  if (!date) { ce.textContent = '日付を選んでください'; ce.hidden = false; return; }
+  if (scope === 'slots' && !times.length) { ce.textContent = '止める時間帯を選んでください'; ce.hidden = false; return; }
+  const btn = e.submitter; btn.disabled = true;
+  try {
+    await api('/api/admin/closures', { method: 'POST', body: JSON.stringify({ date, start_time: scope === 'all' ? null : times, reason: $('#cl-reason').value }) });
+    $('#cl-reason').value = ''; $$('#cl-slots input').forEach((i) => { i.checked = false; });
+    loadClosures();
+  } catch (err) { ce.textContent = err.message; ce.hidden = false; }
+  finally { btn.disabled = false; }
+});
+
+// ---------- 設定 ----------
+async function loadSettings() {
+  try { settings = (await api('/api/admin/settings')).settings; renderSettings(); } catch {}
+}
+function renderSettings() {
+  $$('.stepper').forEach((s) => {
+    const v = settings[s.dataset.key];
+    $('output', s).textContent = s.dataset.key === 'max_days_ahead' ? (v ? `${v}日先まで` : '制限なし') : `${v}卓`;
+  });
+}
+$$('.stepper').forEach((s) => s.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-d]'); if (!b || !settings) return;
+  const step = Number(s.dataset.step || 1);
+  settings[s.dataset.key] = Math.max(0, Math.min(s.dataset.key === 'max_days_ahead' ? 365 : 9, settings[s.dataset.key] + Number(b.dataset.d) * step));
+  renderSettings(); $('#set-msg').hidden = true;
+}));
+$('#set-save').addEventListener('click', async () => {
+  const m = $('#set-msg');
+  try { settings = (await api('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) })).settings; renderSettings();
+    m.className = 'alert alert--ok'; m.textContent = '保存しました'; }
+  catch (e) { m.className = 'alert alert--err'; m.textContent = e.message; }
+  m.hidden = false;
+});
+
+// ---------- 起動 ----------
+async function start() {
+  $('#login').hidden = true; $('#app').hidden = false; $('#logout').hidden = false;
+  $('#cl-date').min = today; loadDay(current || today);
+}
+(async () => {
+  const r = await fetch('/api/admin/me').then((x) => x.json()).catch(() => ({}));
+  today = r.today || new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  r.admin ? start() : showLogin();
+})();
+</script>
+</body>
+</html>

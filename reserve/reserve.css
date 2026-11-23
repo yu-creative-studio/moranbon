@@ -1,0 +1,159 @@
+/* MORANBON ネット予約・キャンセル・管理画面の共通スタイル
+   サイト本体（index.html）と同じ和紙・明朝・モスグリーンの世界観 */
+:root{
+  --paper:#F5F1E8; --paper-2:#EFE8DA; --card:rgba(255,253,248,.72);
+  --ink:#2B2B2B; --ink-soft:#5B544A; --mute:#8C8170;
+  --brown:#5A4632; --moss:#6B7A3E; --moss-deep:#55622F; --rouge:#B45A4A; --beige:#D8C7A8;
+  --line:rgba(90,70,50,.2); --line-strong:rgba(90,70,50,.45);
+  --ok-bg:#EEF1E4; --err-bg:#F6E4DF;
+  --serif:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif;
+  --sans:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
+  --kr:"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0; font-family:var(--sans); font-size:15px; line-height:1.8; letter-spacing:.03em; color:var(--ink);
+  background:var(--paper) url("/images/washi.jpg") 0 0 / 720px 720px;
+  min-height:100vh;
+}
+img{ max-width:100%; height:auto; display:block; }
+a{ color:var(--moss-deep); }
+button,input,select,textarea{ font:inherit; color:inherit; }
+:focus-visible{ outline:2px solid var(--moss); outline-offset:2px; }
+[hidden]{ display:none !important; }
+
+/* ---- ヘッダー ---- */
+.r-header{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:8px max(16px, env(safe-area-inset-right,0px)) 8px max(16px, env(safe-area-inset-left,0px));
+  background:rgba(245,241,232,.94); border-bottom:1px solid var(--line);
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+}
+.r-header .logo img{ height:52px; width:auto; }
+.r-header .tel{ font-family:var(--serif); font-size:14px; color:var(--ink); text-decoration:none; white-space:nowrap; }
+.r-header .tel small{ display:block; font-family:var(--sans); font-size:10px; color:var(--mute); letter-spacing:.1em; line-height:1.2; text-align:right; }
+
+.wrap{ width:100%; max-width:720px; margin:0 auto; padding:28px max(16px, env(safe-area-inset-right,0px)) 80px max(16px, env(safe-area-inset-left,0px)); }
+.page-title{ text-align:center; margin:8px 0 26px; }
+.page-title h1{ margin:0; font-family:var(--serif); font-weight:600; font-size:clamp(22px,5.4vw,28px); letter-spacing:.24em; padding-left:.24em; }
+.page-title .kr{ display:block; font-family:var(--kr); font-size:12px; letter-spacing:.32em; color:var(--moss); margin-top:2px; }
+.page-title .rule{ display:flex; align-items:center; justify-content:center; gap:10px; width:150px; margin:12px auto 0; color:var(--moss); }
+.page-title .rule::before,.page-title .rule::after{ content:""; flex:1; height:1px; background:currentColor; opacity:.6; }
+.page-title .rule i{ width:6px; height:6px; background:currentColor; transform:rotate(45deg); }
+
+.notice{ border:1px solid var(--line); background:var(--card); padding:14px 16px; font-size:13.5px; color:var(--ink-soft); }
+.notice ul{ margin:0; padding-left:1.2em; }
+.notice li + li{ margin-top:2px; }
+.notice strong{ color:var(--ink); font-weight:500; }
+
+/* ---- ステップ ---- */
+.step{ margin-top:30px; }
+.step-head{ display:flex; align-items:baseline; gap:12px; padding-bottom:10px; border-bottom:1px solid var(--line-strong); margin-bottom:16px; }
+.step-head .num{ font-family:var(--serif); font-size:13px; color:var(--rouge); letter-spacing:.1em; }
+.step-head h2{ margin:0; font-family:var(--serif); font-weight:600; font-size:18px; letter-spacing:.14em; }
+.step-head .picked{ margin-left:auto; font-size:13px; color:var(--moss-deep); font-weight:500; }
+.step.is-locked{ opacity:.4; pointer-events:none; }
+
+/* カレンダー */
+.cal-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.cal-nav .month{ font-family:var(--serif); font-size:17px; letter-spacing:.12em; font-variant-numeric:tabular-nums; }
+.icon-btn{ width:44px; height:44px; border:1px solid var(--line-strong); background:var(--card); cursor:pointer; display:grid; place-items:center; }
+.icon-btn:disabled{ opacity:.3; cursor:default; }
+.icon-btn svg{ width:16px; height:16px; }
+.cal{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:4px; }
+.cal .dow{ text-align:center; font-size:11px; color:var(--mute); padding:2px 0 4px; letter-spacing:.1em; }
+.cal .dow.sun{ color:var(--rouge); } .cal .dow.sat{ color:#4D6A8A; }
+.day{
+  aspect-ratio:1/1.02; min-height:44px; border:1px solid var(--line); background:var(--card); cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:0;
+  font-variant-numeric:tabular-nums; transition:background-color .15s, border-color .15s;
+}
+.day .d{ font-size:15px; line-height:1.1; }
+.day .s{ font-size:10px; line-height:1.1; color:var(--moss-deep); letter-spacing:0; }
+.day:hover:not(:disabled){ border-color:var(--moss); }
+.day:disabled{ cursor:default; background:transparent; color:#B4AA98; border-color:transparent; }
+.day:disabled .s{ color:#B4AA98; }
+.day.is-blank{ visibility:hidden; }
+.day.is-selected{ background:var(--moss-deep); border-color:var(--moss-deep); color:#fff; }
+.day.is-selected .s{ color:#E6EBD3; }
+.cal-legend{ display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:10px; font-size:11.5px; color:var(--mute); }
+
+/* 時間・人数 */
+.choices{ display:grid; gap:8px; grid-template-columns:repeat(auto-fill, minmax(min(100%,120px),1fr)); }
+.choice{
+  min-height:56px; border:1px solid var(--line-strong); background:var(--card); cursor:pointer; padding:6px 8px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+  font-family:var(--serif); font-size:18px; letter-spacing:.04em; font-variant-numeric:tabular-nums;
+}
+.choice small{ font-family:var(--sans); font-size:11px; color:var(--moss-deep); letter-spacing:.04em; }
+.choice:hover:not(:disabled){ border-color:var(--moss); }
+.choice:disabled{ cursor:default; color:#B4AA98; border-color:var(--line); background:transparent; }
+.choice:disabled small{ color:#B4AA98; }
+.choice.is-selected{ background:var(--moss-deep); border-color:var(--moss-deep); color:#fff; }
+.choice.is-selected small{ color:#E6EBD3; }
+.choices--party{ grid-template-columns:repeat(4, minmax(0,1fr)); }
+@media (min-width:560px){ .choices--party{ grid-template-columns:repeat(7, minmax(0,1fr)); } }
+.choice--more{ font-size:14px; }
+.phone-box{ margin-top:12px; padding:16px; border:1px solid var(--rouge); background:rgba(180,90,74,.06); font-size:14px; }
+.phone-box a{ font-family:var(--serif); font-size:22px; color:var(--ink); text-decoration:none; letter-spacing:.06em; display:inline-block; margin-top:4px; }
+
+/* フォーム */
+.field{ display:grid; gap:6px; margin-bottom:18px; }
+.field label{ font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px; }
+.req{ font-size:10.5px; color:#fff; background:var(--rouge); padding:1px 6px; letter-spacing:.08em; font-weight:400; }
+.opt{ font-size:10.5px; color:var(--mute); border:1px solid var(--line-strong); padding:0 6px; font-weight:400; }
+.field input,.field textarea,.field select{
+  width:100%; min-height:50px; padding:12px 14px; border:1px solid var(--line-strong); background:#FFFDF8; border-radius:0;
+  font-size:16px; /* iPhoneで拡大されないように16px以上 */
+}
+.field textarea{ min-height:96px; resize:vertical; }
+.field .hint{ font-size:12px; color:var(--mute); }
+.field .err{ font-size:12.5px; color:#A3392B; }
+.field.has-err input,.field.has-err textarea{ border-color:#A3392B; background:#FFF8F6; }
+.check{ display:flex; gap:10px; align-items:flex-start; font-size:14px; margin:6px 0 18px; }
+.check input{ width:22px; height:22px; margin:2px 0 0; accent-color:var(--moss-deep); flex:none; }
+.hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+
+/* ボタン */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:54px; padding:0 26px; width:100%;
+  border:1px solid var(--moss-deep); background:var(--moss-deep); color:#fff; cursor:pointer; text-decoration:none;
+  font-size:15px; font-weight:500; letter-spacing:.14em; transition:background-color .2s, border-color .2s;
+}
+.btn:hover{ background:var(--brown); border-color:var(--brown); }
+.btn:disabled{ opacity:.5; cursor:default; }
+.btn--line{ background:transparent; color:var(--ink); border-color:var(--line-strong); }
+.btn--line:hover{ background:rgba(90,70,50,.08); border-color:var(--brown); }
+.btn--danger{ background:#9E3F31; border-color:#9E3F31; }
+.btn--danger:hover{ background:#7E2F24; border-color:#7E2F24; }
+.btn--sm{ min-height:40px; width:auto; padding:0 14px; font-size:13px; letter-spacing:.06em; }
+.btn-row{ display:grid; gap:10px; margin-top:8px; }
+@media (min-width:560px){ .btn-row{ grid-template-columns:1fr 2fr; } }
+
+/* 確認・完了 */
+.summary{ border:1px solid var(--line-strong); background:var(--card); }
+.summary dl{ margin:0; }
+.summary dl > div{ display:grid; grid-template-columns:7em minmax(0,1fr); gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
+.summary dl > div:last-child{ border-bottom:0; }
+.summary dt{ color:var(--moss-deep); font-size:13px; font-weight:500; letter-spacing:.1em; }
+.summary dd{ margin:0; overflow-wrap:anywhere; }
+.code{ font-family:var(--serif); font-size:26px; letter-spacing:.18em; color:var(--ink); font-variant-numeric:tabular-nums; }
+.done-head{ text-align:center; margin:10px 0 22px; }
+.done-head .mark{ width:56px; height:56px; margin:0 auto 10px; border:1px solid var(--moss); border-radius:50%; display:grid; place-items:center; color:var(--moss-deep); }
+.done-head .mark svg{ width:26px; height:26px; }
+.done-head h2{ margin:0; font-family:var(--serif); font-weight:600; font-size:21px; letter-spacing:.14em; }
+.done-head p{ margin:8px 0 0; color:var(--ink-soft); font-size:14px; }
+
+.alert{ padding:12px 14px; font-size:14px; margin:14px 0; border-left:3px solid; }
+.alert--err{ background:var(--err-bg); border-color:#A3392B; color:#6E2A20; }
+.alert--ok{ background:var(--ok-bg); border-color:var(--moss); color:#3E4A22; }
+
+.r-footer{ text-align:center; font-size:12px; color:var(--mute); padding:24px 16px 40px; }
+.r-footer a{ color:var(--mute); }
+
+.spinner{ width:18px; height:18px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce){ .spinner{ animation-duration:2.4s; } }
+.loading{ display:flex; align-items:center; justify-content:center; gap:10px; color:var(--mute); font-size:13px; padding:24px 0; }
