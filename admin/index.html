@@ -59,6 +59,19 @@
   .board .blk span{ font-size:11px; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
   .board .blk .tag{ display:inline-block; font-size:9.5px; border:1px solid rgba(255,255,255,.6); padding:0 3px; margin-right:4px; letter-spacing:.04em; }
   .board .blk:focus-visible{ outline:2px solid var(--ink); outline-offset:1px; }
+  /* ドラッグで移動・時間の長さを変える */
+  .board .blk{ touch-action:none; user-select:none; -webkit-user-select:none; position:relative; padding-right:16px; cursor:grab; }
+  .board .blk .grip{ position:absolute; right:0; top:0; bottom:0; width:14px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.12); }
+  .board .blk .grip::before{ content:""; width:2px; height:16px; border-left:1px solid rgba(255,255,255,.75); border-right:1px solid rgba(255,255,255,.75); }
+  .board .blk.dragging{ opacity:.35; cursor:grabbing; }
+  .board .blk.resizing{ opacity:.9; box-shadow:0 0 0 2px var(--ink); }
+  .board .drop{ z-index:5; margin:3px 2px; border:2px dashed var(--moss-deep); background:rgba(85,98,47,.18); pointer-events:none;
+    display:flex; align-items:center; padding:0 8px; font-size:12px; font-weight:500; color:var(--moss-deep); white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums; }
+  .board .drop.bad{ border-color:#A3392B; background:rgba(163,57,43,.14); color:#A3392B; }
+  .toast{ position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translate(-50%, 20px); opacity:0; z-index:50;
+    background:rgba(43,43,43,.92); color:#fff; font-size:14px; padding:12px 18px; max-width:calc(100% - 32px); text-align:center; transition:opacity .25s, transform .25s; pointer-events:none; }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
+  .toast.err{ background:rgba(140,40,30,.95); }
   .board .foot{ height:auto; min-height:40px; display:flex; align-items:center; justify-content:flex-start; white-space:nowrap; padding:4px 8px; font-size:11px; color:var(--ink-soft); background:rgba(107,122,62,.06); border-top:1px solid var(--line-strong); font-variant-numeric:tabular-nums; line-height:1.35; }
   .board .foot.lbl{ white-space:normal; flex-direction:column; align-items:flex-start; justify-content:center; position:sticky; left:0; z-index:3; background:#EDEBDD; border-right:1px solid var(--line-strong); font-weight:500; color:var(--moss-deep); }
   .board .foot .z{ color:#A3392B; }
@@ -108,13 +121,28 @@
   .set-row .lbl{ font-weight:500; }
   .set-row .hint{ font-size:12.5px; color:var(--mute); }
   .h3{ font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:.1em; margin:30px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line-strong); }
-  .tb-row{ display:grid; grid-template-columns:minmax(0,1fr) 76px auto auto; gap:8px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
-  .tb-row input[type=text],.tb-row input[type=number]{ min-height:44px; padding:8px 10px; border:1px solid var(--line-strong); background:#FFFDF8; font-size:16px; width:100%; border-radius:0; }
-  .tb-row .chk{ display:flex; align-items:center; gap:6px; font-size:13px; white-space:nowrap; }
-  .tb-row .chk input{ width:20px; height:20px; accent-color:var(--moss-deep); }
-  .tb-row .ord{ display:flex; gap:4px; grid-column:1 / -1; justify-content:flex-end; }
-  .tb-row.off input[type=text]{ color:var(--mute); text-decoration:line-through; }
-  @media (min-width:640px){ .tb-row{ grid-template-columns:minmax(0,1fr) 80px auto auto auto; } .tb-row .ord{ grid-column:auto; } }
+  /* 卓の設定：カード。つまみ（⠿）をドラッグで並べ替え、変更はその場で自動保存 */
+  .tb-list{ display:grid; gap:8px; }
+  .tb-card{ display:grid; grid-template-columns:40px minmax(0,1fr); gap:8px 10px; align-items:center; padding:10px 12px 10px 4px; border:1px solid var(--line-strong); background:var(--card); }
+  .tb-card.off{ opacity:.55; }
+  .tb-card.lifting{ box-shadow:0 8px 24px rgba(0,0,0,.18); border-color:var(--moss); position:relative; z-index:3; background:#FFFDF8; }
+  .tb-handle{ grid-row:1 / span 2; align-self:stretch; display:flex; align-items:center; justify-content:center; border:0; background:transparent; cursor:grab; touch-action:none; color:var(--mute); font-size:20px; padding:0; }
+  .tb-handle:active{ cursor:grabbing; }
+  .tb-top{ display:flex; gap:8px; align-items:center; min-width:0; }
+  .tb-top input{ flex:1; min-width:0; min-height:44px; padding:8px 10px; border:1px solid var(--line); background:#FFFDF8; font-size:16px; border-radius:0; font-weight:500; }
+  .tb-bottom{ display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; }
+  .cap{ display:inline-grid; grid-template-columns:40px 64px 40px; border:1px solid var(--line-strong); background:#FFFDF8; }
+  .cap button{ border:0; background:transparent; min-height:40px; font-size:20px; cursor:pointer; }
+  .cap output{ display:grid; place-items:center; font-variant-numeric:tabular-nums; font-size:15px; border-inline:1px solid var(--line); }
+  .sw{ display:inline-flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer; user-select:none; }
+  .sw input{ appearance:none; -webkit-appearance:none; width:44px; height:26px; border-radius:13px; background:#CFC6B4; position:relative; cursor:pointer; transition:background-color .2s; margin:0; flex:none; }
+  .sw input::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .2s; }
+  .sw input:checked{ background:var(--moss-deep); }
+  .sw input:checked::after{ transform:translateX(18px); }
+  .sw input:disabled{ opacity:.4; cursor:default; }
+  .sw input:focus-visible{ outline:2px solid var(--moss); outline-offset:2px; }
+  .tb-status{ font-size:12.5px; color:var(--mute); min-height:1.4em; margin:8px 0 0; }
+  .tb-status.ok{ color:var(--moss-deep); } .tb-status.err{ color:#A3392B; }
   .logout{ background:none; border:0; color:var(--mute); font-size:12px; text-decoration:underline; cursor:pointer; padding:8px; }
 
   /* シート（予約の入力・変更） */
@@ -186,7 +214,9 @@
       <div class="legend">
         <span><i style="background:var(--moss-deep)"></i>ネット予約</span>
         <span><i style="background:#7A5A3C"></i>電話予約</span>
-        <span>空いているマスをタップすると電話予約を入れられます</span>
+        <span>空いているマスをタップ：電話予約を入れる</span>
+        <span>予約をドラッグ：卓・時間を移動</span>
+        <span>右端のつまみをドラッグ：時間の長さを変える</span>
       </div>
     </div>
 
@@ -233,22 +263,20 @@
         <div class="stepper" data-key="max_days_ahead" data-step="7"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
         <span class="hint">0 のときは制限なし。7日ずつ増減します。</span>
       </div>
-      <p class="alert" id="set-msg" hidden></p>
-      <button class="btn" type="button" id="set-save">保存する</button>
+      <p class="tb-status" id="set-msg" aria-live="polite"></p>
 
       <h2 class="h3">卓</h2>
-      <p class="hint-line" style="margin:-4px 0 6px">予約表の縦の並びです。「ネット」は4人卓・6人卓だけ選べます。使わなくなった卓は「使う」を外してください（過去の予約は残ります）。</p>
-      <div id="tb-list"></div>
-      <div class="btn-row" style="grid-template-columns:auto 1fr; margin-top:14px">
-        <button class="btn btn--line" type="button" id="tb-add" style="white-space:nowrap;padding:0 18px">卓を追加</button>
-        <button class="btn" type="button" id="tb-save">卓を保存する</button>
-      </div>
-      <p class="alert" id="tb-msg" hidden></p>
+      <p class="hint-line" style="margin:-4px 0 6px">左のつまみ（⠿）をドラッグすると、予約表の並び順が変わります。変更はその場で自動保存されます。「ネット」は4人卓・6人卓だけオンにできます。使わなくなった卓は「使う」をオフに（過去の予約は残ります）。</p>
+      <div id="tb-list" class="tb-list"></div>
+      <p class="tb-status" id="tb-status" aria-live="polite"></p>
+      <button class="btn btn--line" type="button" id="tb-add" style="margin-top:6px">＋ 卓を追加</button>
     </div>
   </section>
 </main>
 
 <!-- 予約の入力・変更 -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
   <form class="sheet-in" id="sheet-form" method="dialog" novalidate>
     <div class="sheet-head"><h2 id="sheet-title">電話予約を入れる</h2><button class="x" type="button" id="sheet-close" aria-label="閉じる">×</button></div>
@@ -284,6 +312,7 @@ const dateJa = (s) => { const [, m, d] = s.split('-').map(Number); return `${m}�
 const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 const phoneFmt = (p) => p.length === 11 ? `${p.slice(0, 3)}-${p.slice(3, 7)}-${p.slice(7)}` : p.length === 10 ? `${p.slice(0, 4)}-${p.slice(4, 6)}-${p.slice(6)}` : p;
 const nowJst = () => { const d = new Date(Date.now() + 9 * 3600e3); return { date: d.toISOString().slice(0, 10), min: d.getUTCHours() * 60 + d.getUTCMinutes() }; };
+let boardRows = [], suppressClickUntil = 0;
 let today = null, current = null, tab = 'board', data = null, settings = null, tablesEdit = [];
 
 async function api(path, opt = {}) {
@@ -389,7 +418,7 @@ function renderBoard() {
       html += `<button type="button" class="blk ${b.source}" style="grid-row:${row};grid-column:${c1 + 2} / ${c2 + 2}${t.id ? '' : `;margin-top:${4 + (lane++ % 2) * 2}px`}" data-b="${b.id}"
         aria-label="${esc(b.name_kana)} ${b.party_size}名 ${hm(b.start_min)}〜${hm(b.end_min)}">
         <b><span class="tag">${b.source === 'web' ? 'ネット' : '電話'}</span>${esc(b.name_kana)}</b>
-        <span>${b.party_size}名・${hm(b.start_min)}〜${hm(b.end_min)}${b.note ? '・メモ' : ''}</span></button>`;
+        <span>${b.party_size}名・${hm(b.start_min)}〜${hm(b.end_min)}${b.note ? '・メモ' : ''}</span>${t.id ? '<i class="grip" data-resize aria-hidden="true"></i>' : ''}</button>`;
     }
   });
   // ネットの残り（17:30〜19:30）
@@ -402,6 +431,7 @@ function renderBoard() {
     html += `<div class="foot" style="grid-row:${fr};grid-column:${i + 2}">${s ? `${v(s.t4)}&nbsp;/&nbsp;${v(s.t6)}` : SLOTS.includes(t) ? '停止' : '電話のみ'}</div>`;
   }
   board.innerHTML = html;
+  boardRows = rows;
   board.style.gridTemplateRows = `38px repeat(${rows.length}, var(--row-h)) auto`;
   // 今の時刻の線
   if (current === now.date && now.min > OPEN && now.min < CLOSE) {
@@ -415,11 +445,106 @@ function renderBoard() {
   }
 }
 $('#board').addEventListener('click', (e) => {
+  if (Date.now() < suppressClickUntil) return; // ドラッグの直後はタップ扱いにしない
   const blk = e.target.closest('.blk');
   if (blk) { openSheet(data.bookings.find((b) => b.id === Number(blk.dataset.b))); return; }
   const cell = e.target.closest('button.cell');
   if (cell) openSheet(null, { table_id: Number(cell.dataset.t), start_min: Number(cell.dataset.m) });
 });
+
+
+// ---------- 予約表：ドラッグで移動・長さ変更 ----------
+let toastTimer;
+function toast(msg, err = false) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = 'toast' + (err ? ' err' : ''); }, 2600);
+}
+function boardGeo() {
+  const board = $('#board');
+  const cells = $$('.cell[data-m]', board);
+  const first = cells.find((c) => Number(c.dataset.m) === OPEN);
+  const r = first.getBoundingClientRect();
+  const rows = $$('.tname', board).map((el, i) => { const q = el.getBoundingClientRect(); return { top: q.top, bottom: q.bottom, row: i + 2, table: boardRows[i] }; });
+  return { x0: r.left, colW: r.width, rows };
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const conflicts = (tableId, start, end, selfId) => data.bookings.some((o) =>
+  o.status === 'confirmed' && o.id !== selfId && o.table_id === tableId && o.start_min < end && o.end_min > start);
+
+let drag = null;
+const boardEl = $('#board');
+boardEl.addEventListener('pointerdown', (e) => {
+  const blk = e.target.closest('.blk');
+  if (!blk || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const b = data.bookings.find((x) => x.id === Number(blk.dataset.b));
+  if (!b || !b.table_id || !boardRows.some((t) => t.id === b.table_id)) return; // 卓未定はシートから
+  const rect = blk.getBoundingClientRect();
+  drag = { blk, b, pid: e.pointerId, sx: e.clientX, sy: e.clientY, grabX: e.clientX - rect.left,
+           mode: e.target.closest('[data-resize]') ? 'resize' : 'move', moved: false, target: null };
+  blk.setPointerCapture(e.pointerId);
+});
+boardEl.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  if (!drag.moved) {
+    if (Math.hypot(dx, dy) < 6) return;
+    drag.moved = true;
+    drag.blk.classList.add(drag.mode === 'move' ? 'dragging' : 'resizing');
+    drag.drop = document.createElement('div'); drag.drop.className = 'drop'; boardEl.appendChild(drag.drop);
+  }
+  e.preventDefault();
+  // 端に近づいたら横にスクロール
+  const sc = $('#board-scroll'), sr = sc.getBoundingClientRect();
+  if (e.clientX > sr.right - 36) sc.scrollLeft += 12; else if (e.clientX < sr.left + 120 && sc.scrollLeft > 0) sc.scrollLeft -= 12;
+  const g = boardGeo();
+  const b = drag.b, dur = b.end_min - b.start_min;
+  let table = b.table_id, start = b.start_min, end = b.end_min;
+  if (drag.mode === 'move') {
+    const col = Math.round((e.clientX - drag.grabX - g.x0) / g.colW);
+    start = clamp(OPEN + col * STEP, OPEN, CLOSE - Math.min(dur, CLOSE - OPEN));
+    end = Math.min(CLOSE, start + dur);
+    const row = g.rows.find((r) => e.clientY >= r.top && e.clientY < r.bottom && r.table.id);
+    if (row) table = row.table.id;
+    else if (drag.target) table = drag.target.table;
+  } else {
+    end = clamp(OPEN + Math.round((e.clientX - g.x0) / g.colW) * STEP, start + STEP, CLOSE);
+  }
+  const rowIdx = boardRows.findIndex((t) => t.id === table);
+  const bad = conflicts(table, start, end, b.id);
+  drag.target = { table, start, end, bad };
+  const d = drag.drop;
+  d.style.gridRow = String(rowIdx + 2);
+  d.style.gridColumn = `${(start - OPEN) / STEP + 2} / ${(end - OPEN) / STEP + 2}`;
+  d.className = 'drop' + (bad ? ' bad' : '');
+  d.textContent = bad ? '重なっています' : `${boardRows[rowIdx].name}　${hm(start)}〜${hm(end)}`;
+});
+async function endDrag(e, cancel) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const { blk, b, moved, target } = drag;
+  drag.drop?.remove(); blk.classList.remove('dragging', 'resizing');
+  drag = null;
+  if (!moved) return; // ただのタップ → click でシートを開く
+  suppressClickUntil = Date.now() + 400;
+  if (cancel || !target) return;
+  if (target.table === b.table_id && target.start === b.start_min && target.end === b.end_min) return;
+  if (target.bad) { toast('その卓は、その時間にすでに予約が入っています', true); return; }
+  // 先に見た目を動かしてから保存（失敗したら元に戻す）
+  const before = { table_id: b.table_id, start_min: b.start_min, end_min: b.end_min };
+  Object.assign(b, { table_id: target.table, start_min: target.start, end_min: target.end });
+  renderBoard();
+  try {
+    await api(`/api/admin/bookings/${b.id}`, { method: 'PATCH', body: JSON.stringify({ table_id: target.table, start_min: target.start, end_min: target.end }) });
+    const tname = data.tables.find((t) => t.id === target.table)?.name || '';
+    const call = b.source === 'web' && before.start_min !== target.start ? '（ネット予約なので、お客様にお電話でお知らせください）' : '';
+    toast(`${b.name_kana} 様を ${tname} ${hm(target.start)}〜${hm(target.end)} にしました${call}`);
+    await loadDay(current);
+  } catch (ex) {
+    Object.assign(b, before); renderBoard(); toast(ex.message, true);
+  }
+}
+boardEl.addEventListener('pointerup', (e) => endDrag(e, false));
+boardEl.addEventListener('pointercancel', (e) => endDrag(e, true));
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && drag) { drag.drop?.remove(); drag.blk.classList.remove('dragging', 'resizing'); drag = null; } });
 
 // ---------- 予約の入力・変更シート ----------
 const sheet = $('#sheet');
@@ -564,54 +689,105 @@ $$('.stepper').forEach((s) => s.addEventListener('click', (e) => {
   const b = e.target.closest('[data-d]'); if (!b || !settings) return;
   const step = Number(s.dataset.step || 1);
   settings[s.dataset.key] = Math.max(0, Math.min(s.dataset.key === 'max_days_ahead' ? 365 : 9, settings[s.dataset.key] + Number(b.dataset.d) * step));
-  renderSettings(); $('#set-msg').hidden = true;
+  renderSettings(); saveSettingsSoon();
 }));
-$('#set-save').addEventListener('click', async () => {
-  const m = $('#set-msg');
-  try { settings = (await api('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) })).settings; renderSettings();
-    m.className = 'alert alert--ok'; m.textContent = '保存しました'; }
-  catch (e) { m.className = 'alert alert--err'; m.textContent = e.message; }
-  m.hidden = false;
-});
+// ネット予約の枠も、変えたらその場で自動保存
+let setTimer = null;
+function saveSettingsSoon() {
+  const m = $('#set-msg'); m.className = 'tb-status'; m.textContent = '保存中…';
+  clearTimeout(setTimer);
+  setTimer = setTimeout(async () => {
+    try { settings = (await api('/api/admin/settings', { method: 'POST', body: JSON.stringify(settings) })).settings; renderSettings();
+      m.className = 'tb-status ok'; m.textContent = '保存しました'; if (current) loadDay(current); }
+    catch (e) { m.className = 'tb-status err'; m.textContent = e.message; }
+  }, 500);
+}
 
-// ---------- 設定：卓 ----------
+// ---------- 設定：卓（ドラッグで並べ替え・その場で自動保存） ----------
+let tbTimer = null, tbSaving = Promise.resolve();
 async function loadTables() {
   try { tablesEdit = (await api('/api/admin/tables')).tables.map((t) => ({ ...t })); renderTables(); } catch {}
 }
+const capLabel = (c) => (c >= 10 ? `〜${c}名` : `${c}名`);
 function renderTables() {
   $('#tb-list').innerHTML = tablesEdit.map((t, i) => `
-    <div class="tb-row${t.active ? '' : ' off'}" data-i="${i}">
-      <input type="text" value="${esc(t.name)}" data-k="name" aria-label="卓の名前" maxlength="20">
-      <input type="number" value="${t.capacity}" data-k="capacity" min="1" max="60" aria-label="人数" inputmode="numeric">
-      <label class="chk"><input type="checkbox" data-k="web_ok" ${t.web_ok ? 'checked' : ''} ${t.capacity === 4 || t.capacity === 6 ? '' : 'disabled'}>ネット</label>
-      <label class="chk"><input type="checkbox" data-k="active" ${t.active ? 'checked' : ''}>使う</label>
-      <div class="ord"><button class="btn btn--line btn--sm" type="button" data-mv="-1" aria-label="上へ" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn btn--line btn--sm" type="button" data-mv="1" aria-label="下へ" ${i === tablesEdit.length - 1 ? 'disabled' : ''}>↓</button></div>
+    <div class="tb-card${t.active ? '' : ' off'}" data-i="${i}">
+      <button class="tb-handle" type="button" aria-label="${esc(t.name)} を並べ替え（上下キーでも動かせます）">⠿</button>
+      <div class="tb-top"><input type="text" value="${esc(t.name)}" data-k="name" aria-label="卓の名前" maxlength="20"></div>
+      <div class="tb-bottom">
+        <div class="cap" role="group" aria-label="人数"><button type="button" data-cap="-1" aria-label="人数を減らす">−</button><output>${capLabel(t.capacity)}</output><button type="button" data-cap="1" aria-label="人数を増やす">＋</button></div>
+        <label class="sw"><input type="checkbox" role="switch" data-k="web_ok" ${t.web_ok ? 'checked' : ''} ${t.capacity === 4 || t.capacity === 6 ? '' : 'disabled'}>ネット</label>
+        <label class="sw"><input type="checkbox" role="switch" data-k="active" ${t.active ? 'checked' : ''}>使う</label>
+      </div>
     </div>`).join('');
 }
-$('#tb-list').addEventListener('input', (e) => {
-  const row = e.target.closest('[data-i]'); if (!row) return;
-  const t = tablesEdit[Number(row.dataset.i)], k = e.target.dataset.k;
-  if (k === 'name') t.name = e.target.value;
-  if (k === 'capacity') { t.capacity = Number(e.target.value); if (!(t.capacity === 4 || t.capacity === 6)) t.web_ok = 0; }
-  if (k === 'web_ok') t.web_ok = e.target.checked ? 1 : 0;
-  if (k === 'active') t.active = e.target.checked ? 1 : 0;
-  if (k === 'capacity' || k === 'active') renderTables();
-  $('#tb-msg').hidden = true;
-});
-$('#tb-list').addEventListener('change', (e) => { if (e.target.dataset.k === 'capacity') renderTables(); });
-$('#tb-list').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-mv]'); if (!b) return;
-  const i = Number(b.closest('[data-i]').dataset.i), j = i + Number(b.dataset.mv);
-  [tablesEdit[i], tablesEdit[j]] = [tablesEdit[j], tablesEdit[i]]; renderTables();
-});
-$('#tb-add').addEventListener('click', () => { tablesEdit.push({ name: `卓 ${tablesEdit.length + 1}`, capacity: 4, web_ok: 0, active: 1 }); renderTables(); $$('#tb-list input[data-k=name]').at(-1).focus(); });
-$('#tb-save').addEventListener('click', async () => {
-  const m = $('#tb-msg');
+function tbStatus(msg, cls = '') { const el = $('#tb-status'); el.textContent = msg; el.className = 'tb-status ' + cls; }
+function saveTablesSoon(delay = 600) {
+  clearTimeout(tbTimer); tbStatus('保存中…');
+  tbTimer = setTimeout(() => { tbSaving = tbSaving.then(saveTablesNow); }, delay);
+}
+async function saveTablesNow() {
   try {
-    tablesEdit = (await api('/api/admin/tables', { method: 'POST', body: JSON.stringify({ tables: tablesEdit }) })).tables.map((t) => ({ ...t }));
-    renderTables(); m.className = 'alert alert--ok'; m.textContent = '保存しました'; if (current) loadDay(current);
-  } catch (e) { m.className = 'alert alert--err'; m.textContent = e.message; }
-  m.hidden = false;
+    const saved = (await api('/api/admin/tables', { method: 'POST', body: JSON.stringify({ tables: tablesEdit }) })).tables;
+    saved.forEach((t, i) => { if (tablesEdit[i]) { tablesEdit[i].id = t.id; tablesEdit[i].web_ok = t.web_ok; } });
+    tbStatus('保存しました', 'ok');
+    if (current) loadDay(current);
+  } catch (e) { tbStatus(e.message, 'err'); }
+}
+const tbList = $('#tb-list');
+tbList.addEventListener('input', (e) => {
+  const card = e.target.closest('[data-i]'); if (!card) return;
+  const t = tablesEdit[Number(card.dataset.i)], k = e.target.dataset.k;
+  if (k === 'name') { t.name = e.target.value; saveTablesSoon(900); }
+  if (k === 'web_ok') { t.web_ok = e.target.checked ? 1 : 0; saveTablesSoon(0); }
+  if (k === 'active') { t.active = e.target.checked ? 1 : 0; card.classList.toggle('off', !t.active); saveTablesSoon(0); }
+});
+tbList.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cap]'); if (!b) return;
+  const card = b.closest('[data-i]'), t = tablesEdit[Number(card.dataset.i)];
+  t.capacity = clamp(t.capacity + Number(b.dataset.cap), 1, 60);
+  if (!(t.capacity === 4 || t.capacity === 6)) t.web_ok = 0;
+  $('output', card).textContent = capLabel(t.capacity);
+  const sw = $('[data-k=web_ok]', card); sw.disabled = !(t.capacity === 4 || t.capacity === 6); sw.checked = !!t.web_ok;
+  saveTablesSoon();
+});
+// 並べ替え：つまみをドラッグ（マウス・指どちらでも）。上下キーでも1つずつ動かせる
+let lift = null;
+tbList.addEventListener('pointerdown', (e) => {
+  const h = e.target.closest('.tb-handle'); if (!h) return;
+  e.preventDefault();
+  const card = h.closest('.tb-card');
+  lift = { card, pid: e.pointerId, y0: e.clientY };
+  card.classList.add('lifting'); h.setPointerCapture(e.pointerId);
+});
+tbList.addEventListener('pointermove', (e) => {
+  if (!lift || e.pointerId !== lift.pid) return;
+  e.preventDefault();
+  const cards = $$('.tb-card', tbList).filter((c) => c !== lift.card);
+  const after = cards.find((c) => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+  if (after) { if (lift.card.nextElementSibling !== after) tbList.insertBefore(lift.card, after); }
+  else if (tbList.lastElementChild !== lift.card) tbList.appendChild(lift.card);
+});
+function dropCard(e) {
+  if (!lift || e.pointerId !== lift.pid) return;
+  lift.card.classList.remove('lifting'); lift = null;
+  const order = $$('.tb-card', tbList).map((c) => tablesEdit[Number(c.dataset.i)]);
+  if (order.some((t, i) => t !== tablesEdit[i])) { tablesEdit = order; renderTables(); saveTablesSoon(0); }
+}
+tbList.addEventListener('pointerup', dropCard);
+tbList.addEventListener('pointercancel', dropCard);
+tbList.addEventListener('keydown', (e) => {
+  const h = e.target.closest('.tb-handle'); if (!h || !['ArrowUp', 'ArrowDown'].includes(e.key)) return;
+  e.preventDefault();
+  const i = Number(h.closest('[data-i]').dataset.i), j = i + (e.key === 'ArrowUp' ? -1 : 1);
+  if (j < 0 || j >= tablesEdit.length) return;
+  [tablesEdit[i], tablesEdit[j]] = [tablesEdit[j], tablesEdit[i]]; renderTables();
+  $$('.tb-handle', tbList)[j].focus(); saveTablesSoon(300);
+});
+$('#tb-add').addEventListener('click', () => {
+  tablesEdit.push({ name: `卓 ${tablesEdit.length + 1}`, capacity: 4, web_ok: 0, active: 1 });
+  renderTables(); const inp = $$('#tb-list input[data-k=name]').at(-1); inp.focus(); inp.select();
+  saveTablesSoon(0);
 });
 
 // ---------- 起動 ----------
