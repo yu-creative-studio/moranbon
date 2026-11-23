@@ -21,7 +21,14 @@ class Stmt {
 export class D1 {
   constructor(file = ':memory:') {
     this.db = new DatabaseSync(file);
-    this.db.exec(fs.readFileSync(path.join(ROOT, 'setup/migrations/0001_init.sql'), 'utf8'));
+    // setup/migrations の SQL を番号順に、まだ当てていないものだけ実行
+    this.db.exec('CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY)');
+    const dir = path.join(ROOT, 'setup/migrations');
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
+      if (this.db.prepare('SELECT 1 FROM _migrations WHERE name = ?').get(f)) continue;
+      this.db.exec(fs.readFileSync(path.join(dir, f), 'utf8'));
+      this.db.prepare('INSERT INTO _migrations (name) VALUES (?)').run(f);
+    }
   }
   prepare(sql) { return new Stmt(this.db, sql); }
   async batch(stmts) {

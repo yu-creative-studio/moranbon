@@ -72,14 +72,33 @@ export function slotPassed(dateStr, slot, now) {
 // キャンセル期限：来店日の前日 23:59（日本時間）まで
 export const canCancelOnline = (dateStr, now) => now.date < dateStr;
 
-// 予約済みの開始時刻（分）の配列から、時刻 slot に入れる残り卓数を出す
-export function remainingFor(slot, startMins, cap) {
+// 予約済みの [開始, 終了) の配列から、時刻 slot に入れる残り数を出す（同時に使っている数で判定）
+export function remainingFor(slot, intervals, cap) {
   let worst = 0;
   for (const p of coveredPoints(toMin(slot))) {
-    const n = startMins.filter((s) => s <= p && p < s + STAY_MIN).length;
+    const n = intervals.filter(([s, e]) => s <= p && p < e).length;
     if (n > worst) worst = n;
   }
   return Math.max(0, cap - worst);
+}
+
+// [a1, a2) と [b1, b2) が重なるか
+export const overlaps = (a1, a2, b1, b2) => a1 < b2 && b1 < a2;
+
+// ---- 予約表（電話予約の手入力） ----
+export const OPEN_MIN = 17 * 60 + 30;   // 17:30
+export const CLOSE_MIN = 21 * 60 + 30;  // 21:30
+export const GRID_STEP = 30;
+export const fromMin = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+
+// 電話予約の時間チェック：17:30〜21:00 開始、30分刻み、閉店 21:30 まで
+export function phoneTimeError(startMin, endMin) {
+  if (!Number.isInteger(startMin) || !Number.isInteger(endMin)) return '時間が正しくありません';
+  if (startMin % GRID_STEP || endMin % GRID_STEP) return '時間は30分刻みで入力してください';
+  if (startMin < OPEN_MIN || startMin >= CLOSE_MIN) return '開始は 17:30〜21:00 の間で入力してください';
+  if (endMin <= startMin) return '終了は開始より後にしてください';
+  if (endMin > CLOSE_MIN) return '終了は閉店（21:30）までにしてください';
+  return null;
 }
 
 // ---- 入力の検証（サーバー側でも必ず行う） ----

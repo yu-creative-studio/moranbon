@@ -155,6 +155,70 @@ test('前日リマインドの対象と送信済みフラグ、1年経過デー�
   assert.equal(await DB.purgeOld(db, later), 2);
 });
 
+// ---------- 予約表（卓・電話予約） ----------
+const tablesOf = async (db, cap) => (await DB.listTables(db)).filter((t) => t.capacity === cap);
+const phone = (db, table_id, start, end, extra = {}) =>
+  DB.addPhoneBooking(db, { date: DAY, table_id, start_min: R.toMin(start), end_min: R.toMin(end), party_size: 4, name_kana: '鈴木', ...extra }, NOW);
+
+test('ネット予約は空いている卓に自動で割り当てられる', async () => {
+  const db = new D1();
+  const t4 = await tablesOf(db, 4);
+  const a = (await book(db, '18:00')).booking, b = (await book(db, '18:00')).booking;
+  assert.equal(a.table_id, t4[0].id); assert.equal(b.table_id, t4[1].id);
+  assert.equal(a.end_min, R.toMin('20:00'));
+  const c = (await book(db, '18:00', 6)).booking;
+  assert.equal((await tablesOf(db, 6))[0].id, c.table_id);
+});
+test('電話予約で卓が埋まると、ネットでも満席になる', async () => {
+  const db = new D1();
+  const t4 = await tablesOf(db, 4);
+  for (const t of t4.slice(0, 6)) assert.ok((await phone(db, t.id, '18:00', '20:00')).booking);
+  let [day] = await DB.availability(db, DAY, DAY, NOW);
+  assert.equal(day.slots.find((s) => s.time === '18:00').t4, 1, '空いている4人卓は1卓だけ');
+  assert.equal(day.slots.find((s) => s.time === '17:30').t4, 1);
+  assert.ok((await book(db, '18:00')).booking);
+  assert.ok((await book(db, '19:00')).error, '4人卓が全部埋まった');
+  [day] = await DB.availability(db, DAY, DAY, NOW);
+  assert.equal(day.slots.find((s) => s.time === '19:30').t4, 0);
+  assert.equal(day.slots.find((s) => s.time === '18:00').t6, 1, '6人卓は空いている');
+});
+test('電話予約：同じ卓の重なりは入らない。続けての予約や宴会場は入る', async () => {
+  const db = new D1();
+  const [t] = await tablesOf(db, 4);
+  assert.ok((await phone(db, t.id, '17:30', '19:30')).booking);
+  assert.equal((await phone(db, t.id, '19:00', '21:00')).status, 409);
+  assert.ok((await phone(db, t.id, '19:30', '21:30')).booking, '19:30 からは空いている');
+  assert.match((await phone(db, t.id, '21:00', '22:00')).error, /閉店/);
+  assert.match((await phone(db, t.id, '17:00', '18:00')).error, /17:30/);
+  assert.match((await phone(db, t.id, '18:15', '19:00')).error, /30分/);
+  const hall = (await DB.listTables(db)).find((x) => x.capacity === 30);
+  const big = await phone(db, hall.id, '18:00', '21:00', { party_size: 28, name_kana: '上田商事 忘年会' });
+  assert.ok(big.booking);
+  assert.equal(big.booking.source, 'phone');
+});
+test('予約の移動・時間変更：重なる先には移せない', async () => {
+  const db = new D1();
+  const [t1, t2] = await tablesOf(db, 4);
+  const a = (await phone(db, t1.id, '18:00', '20:00')).booking;
+  const b = (await phone(db, t2.id, '18:00', '20:00')).booking;
+  assert.equal((await DB.updateBooking(db, b.id, { table_id: t1.id })).status, 409);
+  const moved = await DB.updateBooking(db, b.id, { table_id: t1.id, start_min: R.toMin('20:00'), end_min: R.toMin('21:30') });
+  assert.equal(moved.booking.start_time, '20:00');
+  assert.ok((await DB.updateBooking(db, a.id, { end_min: R.toMin('20:00'), party_size: 3 })).booking, '自分自身とは重ならない');
+  await DB.cancelById(db, a.id, 'admin', NOW);
+  assert.equal((await DB.updateBooking(db, a.id, { party_size: 2 })).status, 409, 'キャンセル済みは変更しない');
+});
+test('卓の設定：宴会場はネットに出さない。止めた卓はネットで使わない', async () => {
+  const db = new D1();
+  let tables = await DB.listTables(db, { all: true });
+  tables = tables.map((t) => ({ ...t, web_ok: 1 }));
+  tables = await DB.saveTables(db, tables);
+  assert.equal(tables.find((t) => t.capacity === 30).web_ok, 0);
+  const six = tables.filter((t) => t.capacity === 6);
+  await DB.saveTables(db, tables.map((t) => (six.some((s) => s.id === t.id) ? { ...t, active: 0 } : t)));
+  assert.ok((await book(db, '18:00', 6)).error, '6人卓がないので入らない');
+});
+
 // ---------- API（BASE を指定したときだけ） ----------
 const BASE = process.env.BASE;
 const api = (p, opt = {}) => fetch(BASE + p, { ...opt, headers: { 'content-type': 'application/json', ...(opt.headers || {}) } })

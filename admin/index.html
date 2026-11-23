@@ -12,34 +12,84 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/reserve/reserve.css">
 <style>
-  .tabs{ display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line-strong); margin-bottom:22px; }
-  .tabs button{ min-height:50px; border:0; background:var(--card); cursor:pointer; font-size:14px; letter-spacing:.06em; }
+  .wrap.wide{ max-width:1180px; }
+  .tabs{ display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line-strong); margin-bottom:18px; }
+  .tabs button{ min-height:50px; border:0; background:var(--card); cursor:pointer; font-size:14px; letter-spacing:.04em; padding:0 4px; }
   .tabs button + button{ border-left:1px solid var(--line-strong); }
   .tabs button[aria-selected="true"]{ background:var(--moss-deep); color:#fff; }
+  .narrow{ max-width:720px; margin:0 auto; }
+
+  /* 日付の切り替え */
+  .datebar{ display:grid; grid-template-columns:48px 1fr 48px; gap:8px; align-items:center; margin-bottom:10px; }
+  .datebar .label{ text-align:center; font-family:var(--serif); font-size:clamp(18px,4.6vw,22px); letter-spacing:.06em; font-variant-numeric:tabular-nums; }
+  .datebar .label small{ display:block; font-family:var(--sans); font-size:12px; color:var(--rouge); letter-spacing:.04em; min-height:1.2em; }
   .seg{ display:grid; grid-template-columns:1fr 1fr 1.4fr; gap:8px; margin-bottom:14px; }
-  .seg button,.seg input{ min-height:48px; border:1px solid var(--line-strong); background:var(--card); font-size:15px; cursor:pointer; padding:0 8px; border-radius:0; width:100%; }
+  .seg button,.seg input{ min-height:44px; border:1px solid var(--line-strong); background:var(--card); font-size:15px; cursor:pointer; padding:0 8px; border-radius:0; width:100%; }
   .seg button[aria-pressed="true"]{ background:var(--moss-deep); border-color:var(--moss-deep); color:#fff; }
-  .day-title{ font-family:var(--serif); font-size:20px; letter-spacing:.08em; margin:4px 0 10px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
-  .day-title small{ font-family:var(--sans); font-size:12.5px; color:var(--rouge); letter-spacing:.04em; }
+
+  /* ---- 予約表（卓×時間のマス） ---- */
+  .board-scroll{ overflow-x:auto; border:1px solid var(--line-strong); background:var(--card); -webkit-overflow-scrolling:touch; }
+  .board{
+    --name-w:84px; --col-w:66px; --row-h:58px;
+    display:grid; grid-template-columns:var(--name-w) repeat(8, var(--col-w));
+    grid-auto-rows:var(--row-h); min-width:max-content; position:relative;
+  }
+  @media (min-width:900px){ .board{ --col-w:minmax(96px,1fr); grid-template-columns:var(--name-w) repeat(8, minmax(96px,1fr)); min-width:0; } }
+  .board .hd{ grid-row:1; height:38px; display:flex; align-items:center; justify-content:flex-start; padding-left:6px; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink-soft); border-bottom:1px solid var(--line-strong); background:rgba(245,241,232,.96); position:sticky; top:0; z-index:2; }
+  .board .hd.half{ color:var(--mute); }
+  .board .hd.stop{ color:#A3392B; }
+  .board .corner{ grid-row:1; grid-column:1; position:sticky; left:0; z-index:4; background:rgba(245,241,232,.98); border-bottom:1px solid var(--line-strong); border-right:1px solid var(--line-strong); }
+  .board .tname{ grid-column:1; position:sticky; left:0; z-index:3; background:#F3EEE3; border-right:1px solid var(--line-strong); border-bottom:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; padding:0 8px; line-height:1.25; }
+  .board .tname b{ font-weight:500; font-size:13.5px; }
+  .board .tname small{ font-size:11px; color:var(--mute); }
+  .board .tname small.net{ color:var(--moss-deep); }
+  .board .cell{ border:0; border-bottom:1px solid var(--line); border-left:1px solid var(--line); background:transparent; cursor:pointer; padding:0; }
+  .board .cell.hour{ border-left-color:var(--line-strong); }
+  .board .cell:hover{ background:rgba(107,122,62,.08); }
+  .board .cell:focus-visible{ outline:2px solid var(--moss); outline-offset:-2px; }
+  .board .cell.past{ background:rgba(90,70,50,.04); }
+  .board .blk{
+    z-index:1; margin:4px 3px; border:0; text-align:left; cursor:pointer; color:#fff; padding:5px 8px; overflow:hidden;
+    display:flex; flex-direction:column; justify-content:center; gap:1px; line-height:1.25; min-width:0;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+  }
+  .board .blk.web{ background:var(--moss-deep); }
+  .board .blk.phone{ background:#7A5A3C; }
+  .board .blk b{ font-weight:500; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .board .blk span{ font-size:11px; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
+  .board .blk .tag{ display:inline-block; font-size:9.5px; border:1px solid rgba(255,255,255,.6); padding:0 3px; margin-right:4px; letter-spacing:.04em; }
+  .board .blk:focus-visible{ outline:2px solid var(--ink); outline-offset:1px; }
+  .board .foot{ height:auto; min-height:40px; display:flex; align-items:center; justify-content:flex-start; white-space:nowrap; padding:4px 8px; font-size:11px; color:var(--ink-soft); background:rgba(107,122,62,.06); border-top:1px solid var(--line-strong); font-variant-numeric:tabular-nums; line-height:1.35; }
+  .board .foot.lbl{ white-space:normal; flex-direction:column; align-items:flex-start; justify-content:center; position:sticky; left:0; z-index:3; background:#EDEBDD; border-right:1px solid var(--line-strong); font-weight:500; color:var(--moss-deep); }
+  .board .foot .z{ color:#A3392B; }
+  .board .now{ position:absolute; top:38px; bottom:0; width:2px; background:var(--rouge); z-index:2; pointer-events:none; }
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--ink-soft); margin:10px 0 0; }
+  .legend i{ display:inline-block; width:12px; height:12px; vertical-align:-1px; margin-right:5px; }
+  .hint-line{ font-size:12.5px; color:var(--mute); margin:8px 0 0; }
+
+  /* 一覧 */
   .slots{ width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; margin-bottom:22px; background:var(--card); }
   .slots th,.slots td{ border:1px solid var(--line); padding:9px 6px; text-align:center; font-size:14px; }
   .slots th{ font-weight:500; font-size:12.5px; color:var(--moss-deep); background:rgba(107,122,62,.07); }
   .slots td.full{ color:#A3392B; font-weight:500; }
-  .slots td.closed{ color:var(--mute); font-size:12px; }
   .bk{ border:1px solid var(--line-strong); background:var(--card); padding:14px 16px; display:grid; gap:4px; }
   .bk + .bk{ margin-top:10px; }
-  .bk .top{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .bk .top{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .bk .time{ font-family:var(--serif); font-size:22px; font-variant-numeric:tabular-nums; }
   .bk .party{ font-size:15px; font-weight:500; }
-  .bk .tag{ font-size:11px; border:1px solid var(--line-strong); padding:0 6px; color:var(--ink-soft); }
+  .tag2{ font-size:11px; border:1px solid var(--line-strong); padding:0 6px; color:var(--ink-soft); }
+  .tag2.web{ border-color:var(--moss); color:var(--moss-deep); }
+  .tag2.phone{ border-color:#7A5A3C; color:#7A5A3C; }
   .bk .name{ font-size:16px; }
   .bk .meta{ font-size:13px; color:var(--ink-soft); display:flex; gap:4px 14px; flex-wrap:wrap; }
   .bk .meta a{ font-size:15px; }
   .bk .note{ font-size:13.5px; background:rgba(180,90,74,.07); padding:6px 10px; border-left:2px solid var(--rouge); white-space:pre-wrap; overflow-wrap:anywhere; }
-  .bk .actions{ display:flex; justify-content:flex-end; margin-top:6px; }
+  .bk .actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
   .bk.is-canceled{ opacity:.55; }
   .bk.is-canceled .time{ text-decoration:line-through; }
   .empty{ text-align:center; color:var(--mute); padding:28px 0; border:1px dashed var(--line-strong); font-size:14px; }
+
+  /* 休業・設定 */
   .radio-row{ display:flex; gap:8px; flex-wrap:wrap; }
   .pill{ position:relative; }
   .pill input{ position:absolute; opacity:0; }
@@ -53,12 +103,37 @@
   .cl-item .what small{ display:block; color:var(--mute); }
   .stepper{ display:grid; grid-template-columns:56px 1fr 56px; border:1px solid var(--line-strong); background:var(--card); }
   .stepper button{ min-height:56px; border:0; background:transparent; font-size:24px; cursor:pointer; }
-  .stepper output{ display:grid; place-items:center; font-family:var(--serif); font-size:24px; font-variant-numeric:tabular-nums; border-inline:1px solid var(--line); }
+  .stepper output{ display:grid; place-items:center; font-family:var(--serif); font-size:22px; font-variant-numeric:tabular-nums; border-inline:1px solid var(--line); }
   .set-row{ display:grid; gap:8px; margin-bottom:22px; }
   .set-row .lbl{ font-weight:500; }
   .set-row .hint{ font-size:12.5px; color:var(--mute); }
-  .h3{ font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:.1em; margin:26px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line-strong); }
+  .h3{ font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:.1em; margin:30px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line-strong); }
+  .tb-row{ display:grid; grid-template-columns:minmax(0,1fr) 76px auto auto; gap:8px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+  .tb-row input[type=text],.tb-row input[type=number]{ min-height:44px; padding:8px 10px; border:1px solid var(--line-strong); background:#FFFDF8; font-size:16px; width:100%; border-radius:0; }
+  .tb-row .chk{ display:flex; align-items:center; gap:6px; font-size:13px; white-space:nowrap; }
+  .tb-row .chk input{ width:20px; height:20px; accent-color:var(--moss-deep); }
+  .tb-row .ord{ display:flex; gap:4px; grid-column:1 / -1; justify-content:flex-end; }
+  .tb-row.off input[type=text]{ color:var(--mute); text-decoration:line-through; }
+  @media (min-width:640px){ .tb-row{ grid-template-columns:minmax(0,1fr) 80px auto auto auto; } .tb-row .ord{ grid-column:auto; } }
   .logout{ background:none; border:0; color:var(--mute); font-size:12px; text-decoration:underline; cursor:pointer; padding:8px; }
+
+  /* シート（予約の入力・変更） */
+  dialog.sheet{ border:0; padding:0; width:min(560px, 100%); max-height:92vh; background:var(--paper); color:var(--ink); box-shadow:0 10px 40px rgba(0,0,0,.25); }
+  dialog.sheet::backdrop{ background:rgba(30,24,18,.45); }
+  @media (max-width:640px){ dialog.sheet{ margin:auto 0 0; max-width:100%; width:100%; max-height:94vh; } }
+  .sheet-in{ padding:18px max(18px, env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(18px, env(safe-area-inset-left,0px)); overflow:auto; max-height:92vh; }
+  .sheet-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .sheet-head h2{ margin:0; font-family:var(--serif); font-weight:600; font-size:19px; letter-spacing:.08em; flex:1; }
+  .sheet .x{ width:44px; height:44px; border:0; background:transparent; font-size:26px; line-height:1; cursor:pointer; color:var(--ink-soft); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .sheet .field{ margin-bottom:12px; }
+  .sheet select{ appearance:none; -webkit-appearance:none; background:#FFFDF8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235A4632' stroke-width='1.6'/%3E%3C/svg%3E") right 12px center no-repeat; padding-right:34px; }
+  .party-step{ display:grid; grid-template-columns:50px 1fr 50px; border:1px solid var(--line-strong); background:#FFFDF8; }
+  .party-step button{ border:0; background:transparent; font-size:22px; min-height:50px; cursor:pointer; }
+  .party-step input{ border:0 !important; border-inline:1px solid var(--line) !important; text-align:center; font-family:var(--serif); font-size:20px !important; min-height:50px; }
+  .info-box{ font-size:13px; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:10px 12px; margin-bottom:12px; overflow-wrap:anywhere; }
+  .sheet-actions{ display:grid; gap:8px; margin-top:6px; }
+  .sheet-actions .row{ display:grid; grid-template-columns:1fr 2fr; gap:8px; }
 </style>
 </head>
 <body>
@@ -67,11 +142,11 @@
   <button class="logout" type="button" id="logout" hidden>ログアウト</button>
 </header>
 
-<main class="wrap">
+<main class="wrap wide">
   <div class="page-title"><h1>予約管理</h1><div class="rule" aria-hidden="true"><i></i></div></div>
 
   <!-- ログイン -->
-  <section id="login" hidden>
+  <section id="login" class="narrow" hidden>
     <form id="login-form" novalidate>
       <div class="field">
         <label for="password">パスワード</label>
@@ -83,24 +158,46 @@
   </section>
 
   <section id="app" hidden>
-    <div class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="list">予約一覧</button>
+    <div class="tabs narrow" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="board">予約表</button>
+      <button role="tab" aria-selected="false" data-tab="list">一覧</button>
       <button role="tab" aria-selected="false" data-tab="closures">休業・貸切</button>
       <button role="tab" aria-selected="false" data-tab="settings">設定</button>
     </div>
 
-    <!-- 予約一覧 -->
-    <div data-panel="list">
-      <div class="seg">
+    <!-- 日付（予約表・一覧で共通） -->
+    <div id="date-area">
+      <div class="datebar narrow">
+        <button class="icon-btn" type="button" id="d-prev" aria-label="前の日"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 5 8l5 5"/></svg></button>
+        <div class="label" id="d-label"></div>
+        <button class="icon-btn" type="button" id="d-next" aria-label="次の日"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6 3 5 5-5 5"/></svg></button>
+      </div>
+      <div class="seg narrow">
         <button type="button" data-day="0" aria-pressed="true">今日</button>
         <button type="button" data-day="1" aria-pressed="false">明日</button>
         <input type="date" id="pick-date" aria-label="日付を選ぶ">
       </div>
-      <div id="list-body"><div class="loading"><span class="spinner"></span>読み込み中</div></div>
+    </div>
+
+    <!-- 予約表 -->
+    <div data-panel="board">
+      <p class="alert alert--err" id="board-error" hidden></p>
+      <div class="board-scroll" id="board-scroll"><div class="board" id="board"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--moss-deep)"></i>ネット予約</span>
+        <span><i style="background:#7A5A3C"></i>電話予約</span>
+        <span>空いているマスをタップすると電話予約を入れられます</span>
+      </div>
+    </div>
+
+    <!-- 一覧 -->
+    <div data-panel="list" class="narrow" hidden>
+      <div id="list-body"></div>
     </div>
 
     <!-- 臨時休業・貸切 -->
-    <div data-panel="closures" hidden>
+    <div data-panel="closures" class="narrow" hidden>
+      <p class="hint-line" style="margin:0 0 14px">ネット予約の受付を止めます。電話予約は予約表から入れられます。</p>
       <form id="cl-form" novalidate>
         <div class="field"><label for="cl-date">日付</label><input type="date" id="cl-date" required></div>
         <div class="field">
@@ -120,11 +217,12 @@
     </div>
 
     <!-- 設定 -->
-    <div data-panel="settings" hidden>
+    <div data-panel="settings" class="narrow" hidden>
+      <h2 class="h3" style="margin-top:0">ネット予約の枠</h2>
       <div class="set-row">
         <span class="lbl">ネットに出す 4人卓（1〜4名様）</span>
         <div class="stepper" data-key="web_cap_4"><button type="button" data-d="-1" aria-label="減らす">−</button><output></output><button type="button" data-d="1" aria-label="増やす">＋</button></div>
-        <span class="hint">同じ時間に、ネットから入れる4人卓の数です。</span>
+        <span class="hint">同じ時間に、ネットから入れる4人卓の上限です。実際に空いている卓がなければ、上限内でも満席になります。</span>
       </div>
       <div class="set-row">
         <span class="lbl">ネットに出す 6人卓（5〜6名様）</span>
@@ -137,41 +235,78 @@
       </div>
       <p class="alert" id="set-msg" hidden></p>
       <button class="btn" type="button" id="set-save">保存する</button>
+
+      <h2 class="h3">卓</h2>
+      <p class="hint-line" style="margin:-4px 0 6px">予約表の縦の並びです。「ネット」は4人卓・6人卓だけ選べます。使わなくなった卓は「使う」を外してください（過去の予約は残ります）。</p>
+      <div id="tb-list"></div>
+      <div class="btn-row" style="grid-template-columns:auto 1fr; margin-top:14px">
+        <button class="btn btn--line" type="button" id="tb-add" style="white-space:nowrap;padding:0 18px">卓を追加</button>
+        <button class="btn" type="button" id="tb-save">卓を保存する</button>
+      </div>
+      <p class="alert" id="tb-msg" hidden></p>
     </div>
   </section>
 </main>
+
+<!-- 予約の入力・変更 -->
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+  <form class="sheet-in" id="sheet-form" method="dialog" novalidate>
+    <div class="sheet-head"><h2 id="sheet-title">電話予約を入れる</h2><button class="x" type="button" id="sheet-close" aria-label="閉じる">×</button></div>
+    <div class="info-box" id="sheet-info" hidden></div>
+    <div class="field"><label for="f-table">卓</label><select id="f-table"></select></div>
+    <div class="grid2">
+      <div class="field"><label for="f-start">開始</label><select id="f-start"></select></div>
+      <div class="field"><label for="f-end">終了</label><select id="f-end"></select></div>
+    </div>
+    <div class="field"><label for="f-party">人数</label>
+      <div class="party-step"><button type="button" data-p="-1" aria-label="減らす">−</button><input id="f-party" type="number" inputmode="numeric" min="1" max="60" value="2"><button type="button" data-p="1" aria-label="増やす">＋</button></div>
+    </div>
+    <div class="field"><label for="f-name">お名前</label><input id="f-name" maxlength="40" placeholder="例：鈴木 様／上田商事 忘年会" autocomplete="off"></div>
+    <div class="field" id="f-phone-wrap"><label for="f-phone">電話番号<span class="opt">任意</span></label><input id="f-phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off"></div>
+    <div class="field"><label for="f-note">メモ<span class="opt">任意</span></label><textarea id="f-note" maxlength="300" style="min-height:70px" placeholder="コース、アレルギー、子ども椅子 など"></textarea></div>
+    <p class="alert alert--err" id="sheet-error" hidden></p>
+    <div class="sheet-actions">
+      <button class="btn" type="submit" id="sheet-save">予約を入れる</button>
+      <button class="btn btn--line" type="button" id="sheet-cancel" hidden>この予約を取り消す</button>
+    </div>
+  </form>
+</dialog>
 
 <script type="module">
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30'];
+const OPEN = 17 * 60 + 30, CLOSE = 21 * 60 + 30, STEP = 30, COLS = (CLOSE - OPEN) / STEP; // 8マス
 const WD = '日月火水木金土';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const addDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-const dateJa = (s) => { const [y, m, d] = s.split('-').map(Number); return `${m}月${d}日（${WD[new Date(s + 'T00:00:00Z').getUTCDay()]}）`; };
+const dateJa = (s) => { const [, m, d] = s.split('-').map(Number); return `${m}月${d}日（${WD[new Date(s + 'T00:00:00Z').getUTCDay()]}）`; };
+const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 const phoneFmt = (p) => p.length === 11 ? `${p.slice(0, 3)}-${p.slice(3, 7)}-${p.slice(7)}` : p.length === 10 ? `${p.slice(0, 4)}-${p.slice(4, 6)}-${p.slice(6)}` : p;
-let today = null, current = null, settings = null;
+const nowJst = () => { const d = new Date(Date.now() + 9 * 3600e3); return { date: d.toISOString().slice(0, 10), min: d.getUTCHours() * 60 + d.getUTCMinutes() }; };
+let today = null, current = null, tab = 'board', data = null, settings = null, tablesEdit = [];
 
 async function api(path, opt = {}) {
   const res = await fetch(path, { credentials: 'same-origin', ...opt, headers: { 'content-type': 'application/json', ...(opt.headers || {}) } });
   let body = null; try { body = await res.json(); } catch {}
   if (res.status === 401) { showLogin(); throw new Error('ログインしてください'); }
-  if (!res.ok || !body?.ok) throw new Error(body?.error || '通信に失敗しました');
+  if (!res.ok || !body?.ok) throw new Error(body?.error || '通信に失敗しました。電波の良い場所でもう一度お試しください');
   return body;
 }
 
 // 2回押すと実行するボタン（誤操作防止）
-function twoStep(btn, label, run) {
+function twoStep(btn, label, run, onError) {
+  const original = btn.textContent;
   btn.addEventListener('click', async () => {
     if (btn.dataset.armed !== '1') {
-      btn.dataset.armed = '1'; const old = btn.textContent; btn.textContent = label;
-      setTimeout(() => { if (btn.isConnected && btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.textContent = old; } }, 4000);
+      btn.dataset.armed = '1'; btn.textContent = label;
+      setTimeout(() => { if (btn.isConnected && btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.textContent = original; } }, 4000);
       return;
     }
-    btn.disabled = true; try { await run(); } catch (e) { alertBox(e.message); } finally { btn.disabled = false; }
+    btn.dataset.armed = ''; btn.textContent = original; btn.disabled = true;
+    try { await run(); } catch (e) { onError?.(e.message); } finally { btn.disabled = false; }
   });
 }
-function alertBox(msg) { const p = $('#list-body .alert--err') || null; if (p) { p.textContent = msg; p.hidden = false; } else console.warn(msg); }
 
 // ---------- ログイン ----------
 function showLogin() { $('#app').hidden = true; $('#login').hidden = false; $('#logout').hidden = true; $('#password').focus(); }
@@ -189,57 +324,203 @@ $('#logout').addEventListener('click', async () => { await fetch('/api/admin/log
 
 // ---------- タブ ----------
 $$('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => {
+  tab = b.dataset.tab;
   $$('.tabs [data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-  $$('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== b.dataset.tab; });
-  if (b.dataset.tab === 'closures') loadClosures();
-  if (b.dataset.tab === 'settings') loadSettings();
+  $$('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
+  $('#date-area').hidden = !(tab === 'board' || tab === 'list');
+  if (tab === 'board' || tab === 'list') render();
+  if (tab === 'closures') loadClosures();
+  if (tab === 'settings') { loadSettings(); loadTables(); }
 }));
 
-// ---------- 予約一覧 ----------
+// ---------- 日付 ----------
 $$('.seg [data-day]').forEach((b) => b.addEventListener('click', () => loadDay(addDays(today, Number(b.dataset.day)))));
 $('#pick-date').addEventListener('change', (e) => e.target.value && loadDay(e.target.value));
+$('#d-prev').addEventListener('click', () => loadDay(addDays(current, -1)));
+$('#d-next').addEventListener('click', () => loadDay(addDays(current, 1)));
 
 async function loadDay(date) {
   current = date;
   $$('.seg [data-day]').forEach((b) => b.setAttribute('aria-pressed', String(addDays(today, Number(b.dataset.day)) === date)));
   $('#pick-date').value = date;
-  const box = $('#list-body');
-  box.innerHTML = '<div class="loading"><span class="spinner"></span>読み込み中</div>';
+  $('#d-label').innerHTML = `${dateJa(date)}<small></small>`;
   try {
-    const r = await api('/api/admin/bookings?date=' + date);
-    const active = r.bookings.filter((b) => b.status === 'confirmed');
-    const people = active.reduce((n, b) => n + b.party_size, 0);
-    let html = `<p class="alert alert--err" hidden></p>
-      <div class="day-title">${dateJa(date)}<small>${esc(r.holiday || (!r.day.open && r.day.reason !== '満席' ? r.day.reason : '') || '')}</small></div>
-      <p style="margin:-4px 0 12px;font-size:13.5px;color:var(--ink-soft)">ネット予約 ${active.length}組・${people}名様</p>`;
-    if (r.day.slots.length) {
-      html += `<table class="slots"><thead><tr><th>開始</th><th>4人卓の残り</th><th>6人卓の残り</th></tr></thead><tbody>` +
-        r.day.slots.map((s) => {
-          const c = (n, cap) => `<td class="${n === 0 ? 'full' : ''}">${n === 0 ? '満' : n}<span style="color:var(--mute);font-size:11px"> / ${cap}</span></td>`;
-          return `<tr><th scope="row">${s.time}</th>${c(s.t4, r.settings.web_cap_4)}${c(s.t6, r.settings.web_cap_6)}</tr>`;
-        }).join('') + '</tbody></table>';
+    data = await api('/api/admin/bookings?date=' + date);
+    $('#board-error').hidden = true;
+  } catch (e) { data = null; $('#board-error').textContent = e.message; $('#board-error').hidden = false; }
+  render();
+}
+
+function render() {
+  if (!data) return;
+  const stop = data.holiday || (!data.day.open && data.day.reason !== '満席' ? data.day.reason : '');
+  $('#d-label small').textContent = stop || '';
+  if (tab === 'board') renderBoard(); else if (tab === 'list') renderList();
+}
+
+// ---------- 予約表 ----------
+function renderBoard() {
+  const board = $('#board');
+  const tables = data.tables;
+  const active = data.bookings.filter((b) => b.status === 'confirmed');
+  const unassigned = active.filter((b) => !tables.some((t) => t.id === b.table_id));
+  const rows = [...tables];
+  if (unassigned.length) rows.push({ id: null, name: '卓未定', capacity: 0, web_ok: 0 });
+  const now = nowJst();
+  let html = '<div class="corner"></div>';
+  for (let i = 0; i < COLS; i++) {
+    const m = OPEN + i * STEP;
+    html += `<div class="hd${m % 60 ? ' half' : ''}" style="grid-column:${i + 2}">${hm(m)}</div>`;
+  }
+  rows.forEach((t, r) => {
+    const row = r + 2;
+    html += `<div class="tname" style="grid-row:${row}"><b>${esc(t.name)}</b><small class="${t.web_ok ? 'net' : ''}">${t.id ? (t.capacity >= 10 ? `〜${t.capacity}名` : `${t.capacity}名`) + (t.web_ok ? '・ネット' : '') : '移動してください'}</small></div>`;
+    for (let i = 0; i < COLS; i++) {
+      const m = OPEN + i * STEP;
+      const past = current < now.date || (current === now.date && m + STEP <= now.min);
+      if (t.id) html += `<button type="button" class="cell${m % 60 === 0 ? ' hour' : ''}${past ? ' past' : ''}" style="grid-row:${row};grid-column:${i + 2}" data-t="${t.id}" data-m="${m}" aria-label="${esc(t.name)} ${hm(m)} に予約を入れる"></button>`;
+      else html += `<div class="cell" style="grid-row:${row};grid-column:${i + 2};cursor:default"></div>`;
     }
-    if (!r.bookings.length) html += '<div class="empty">ネット予約はまだありません</div>';
-    html += r.bookings.map((b) => `
-      <article class="bk${b.status === 'canceled' ? ' is-canceled' : ''}">
-        <div class="top"><span class="time">${b.start_time}</span><span class="party">${b.party_size}名様</span><span class="tag">${b.table_type}人卓</span>
-          ${b.status === 'canceled' ? `<span class="tag">キャンセル済（${b.canceled_by === 'admin' ? 'お店' : 'お客様'}）</span>` : ''}</div>
-        <div class="name">${esc(b.name_kana)} 様</div>
-        <div class="meta"><a href="tel:${esc(b.phone)}">${esc(phoneFmt(b.phone))}</a><span>${esc(b.email)}</span><span>予約番号 ${esc(b.code)}</span></div>
-        ${b.note ? `<div class="note">${esc(b.note)}</div>` : ''}
-        ${b.status === 'confirmed' ? `<div class="actions"><button class="btn btn--line btn--sm" type="button" data-cancel="${b.id}">取り消す</button></div>` : ''}
-      </article>`).join('');
-    box.innerHTML = html;
-    $$('[data-cancel]', box).forEach((btn) => twoStep(btn, 'もう一度押すと取り消します', async () => {
-      await api(`/api/admin/bookings/${btn.dataset.cancel}/cancel`, { method: 'POST' }); loadDay(current);
-    }));
-  } catch (e) { box.innerHTML = `<p class="alert alert--err">${esc(e.message)}</p>`; }
+    const mine = t.id ? active.filter((b) => b.table_id === t.id) : unassigned;
+    let lane = 0;
+    for (const b of mine) {
+      const c1 = Math.max(0, (b.start_min - OPEN) / STEP), c2 = Math.min(COLS, (b.end_min - OPEN) / STEP);
+      if (c2 <= c1) continue;
+      html += `<button type="button" class="blk ${b.source}" style="grid-row:${row};grid-column:${c1 + 2} / ${c2 + 2}${t.id ? '' : `;margin-top:${4 + (lane++ % 2) * 2}px`}" data-b="${b.id}"
+        aria-label="${esc(b.name_kana)} ${b.party_size}名 ${hm(b.start_min)}〜${hm(b.end_min)}">
+        <b><span class="tag">${b.source === 'web' ? 'ネット' : '電話'}</span>${esc(b.name_kana)}</b>
+        <span>${b.party_size}名・${hm(b.start_min)}〜${hm(b.end_min)}${b.note ? '・メモ' : ''}</span></button>`;
+    }
+  });
+  // ネットの残り（17:30〜19:30）
+  const fr = rows.length + 2;
+  html += `<div class="foot lbl" style="grid-row:${fr};grid-column:1"><span>ネット残り</span><span style="font-weight:400;font-size:10.5px">4人卓 / 6人卓</span></div>`;
+  for (let i = 0; i < COLS; i++) {
+    const t = hm(OPEN + i * STEP).padStart(5, '0');
+    const s = (data.day.slots || []).find((x) => x.time === t);
+    const v = (n) => `<span class="${n === 0 ? 'z' : ''}">${n === 0 ? '×' : n}</span>`;
+    html += `<div class="foot" style="grid-row:${fr};grid-column:${i + 2}">${s ? `${v(s.t4)}&nbsp;/&nbsp;${v(s.t6)}` : SLOTS.includes(t) ? '停止' : '電話のみ'}</div>`;
+  }
+  board.innerHTML = html;
+  board.style.gridTemplateRows = `38px repeat(${rows.length}, var(--row-h)) auto`;
+  // 今の時刻の線
+  if (current === now.date && now.min > OPEN && now.min < CLOSE) {
+    const firstCell = $('.cell', board), name = $('.tname', board);
+    if (firstCell && name) {
+      const colW = firstCell.getBoundingClientRect().width;
+      const line = document.createElement('div'); line.className = 'now';
+      line.style.left = `${name.getBoundingClientRect().width + ((now.min - OPEN) / STEP) * colW}px`;
+      board.appendChild(line);
+    }
+  }
+}
+$('#board').addEventListener('click', (e) => {
+  const blk = e.target.closest('.blk');
+  if (blk) { openSheet(data.bookings.find((b) => b.id === Number(blk.dataset.b))); return; }
+  const cell = e.target.closest('button.cell');
+  if (cell) openSheet(null, { table_id: Number(cell.dataset.t), start_min: Number(cell.dataset.m) });
+});
+
+// ---------- 予約の入力・変更シート ----------
+const sheet = $('#sheet');
+let editing = null;
+function fillTimes(start, end) {
+  $('#f-start').innerHTML = Array.from({ length: COLS }, (_, i) => OPEN + i * STEP).map((m) => `<option value="${m}" ${m === start ? 'selected' : ''}>${hm(m)}</option>`).join('');
+  fillEnd(start, end);
+}
+function fillEnd(start, end) {
+  const opts = []; for (let m = start + STEP; m <= CLOSE; m += STEP) opts.push(m);
+  if (!opts.includes(end)) end = Math.min(start + 120, CLOSE);
+  $('#f-end').innerHTML = opts.map((m) => `<option value="${m}" ${m === end ? 'selected' : ''}>${hm(m)}${m === CLOSE ? '（閉店）' : ''}</option>`).join('');
+}
+$('#f-start').addEventListener('change', () => {
+  const s = Number($('#f-start').value), oldS = editing?.start_min ?? s, oldE = Number($('#f-end').value);
+  fillEnd(s, Math.min(CLOSE, s + Math.max(STEP, oldE - oldS)));
+});
+$$('.party-step [data-p]').forEach((b) => b.addEventListener('click', () => {
+  const i = $('#f-party'); i.value = Math.max(1, Math.min(60, (Number(i.value) || 0) + Number(b.dataset.p)));
+}));
+
+function openSheet(b, preset = {}) {
+  editing = b || null;
+  const t = b ? b : { table_id: preset.table_id, start_min: preset.start_min, end_min: Math.min(CLOSE, preset.start_min + 120), party_size: 2, name_kana: '', phone: '', note: '' };
+  $('#sheet-title').textContent = b ? (b.source === 'web' ? 'ネット予約' : '電話予約') : '電話予約を入れる';
+  $('#f-table').innerHTML = data.tables.map((x) => `<option value="${x.id}" ${x.id === t.table_id ? 'selected' : ''}>${esc(x.name)}（${x.capacity >= 10 ? '〜' : ''}${x.capacity}名）</option>`).join('')
+    + (!data.tables.some((x) => x.id === t.table_id) ? '<option value="" selected disabled>卓を選んでください</option>' : '');
+  fillTimes(t.start_min, t.end_min);
+  $('#f-party').value = t.party_size;
+  $('#f-name').value = t.name_kana;
+  $('#f-phone').value = t.phone ? phoneFmt(t.phone) : '';
+  $('#f-note').value = t.note || '';
+  const web = b?.source === 'web';
+  $('#f-phone').readOnly = web;
+  const info = $('#sheet-info');
+  info.hidden = !b;
+  if (b) info.innerHTML = `予約番号 ${esc(b.code)}${web ? `<br>電話 <a href="tel:${esc(b.phone)}">${esc(phoneFmt(b.phone))}</a>　${esc(b.email)}<br>ネット予約の電話番号・メールは変更できません` : (b.phone ? `<br>電話 <a href="tel:${esc(b.phone)}">${esc(phoneFmt(b.phone))}</a>` : '')}`;
+  $('#sheet-save').textContent = b ? '変更を保存する' : '予約を入れる';
+  $('#sheet-cancel').hidden = !b;
+  $('#sheet-cancel').textContent = 'この予約を取り消す';
+  $('#sheet-error').hidden = true;
+  sheet.showModal();
+  if (!b) setTimeout(() => $('#f-name').focus(), 50);
+}
+$('#sheet-close').addEventListener('click', () => sheet.close());
+sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); }); // 外側をタップで閉じる
+
+$('#sheet-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('#sheet-error');
+  const body = {
+    date: current, table_id: Number($('#f-table').value), start_min: Number($('#f-start').value), end_min: Number($('#f-end').value),
+    party_size: Number($('#f-party').value), name_kana: $('#f-name').value, phone: $('#f-phone').value, note: $('#f-note').value,
+  };
+  if (!body.table_id) { err.textContent = '卓を選んでください'; err.hidden = false; return; }
+  if (!body.name_kana.trim()) { err.textContent = 'お名前を入力してください'; err.hidden = false; $('#f-name').focus(); return; }
+  const btn = $('#sheet-save'); btn.disabled = true;
+  try {
+    if (editing) await api(`/api/admin/bookings/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    else await api('/api/admin/bookings', { method: 'POST', body: JSON.stringify(body) });
+    sheet.close(); await loadDay(current);
+  } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+  finally { btn.disabled = false; }
+});
+twoStep($('#sheet-cancel'), 'もう一度押すと取り消します', async () => {
+  await api(`/api/admin/bookings/${editing.id}/cancel`, { method: 'POST' });
+  sheet.close(); await loadDay(current);
+}, (m) => { $('#sheet-error').textContent = m; $('#sheet-error').hidden = false; });
+
+// ---------- 一覧 ----------
+function renderList() {
+  const box = $('#list-body');
+  const tname = (id) => data.tables.find((t) => t.id === id)?.name || '卓未定';
+  const active = data.bookings.filter((b) => b.status === 'confirmed');
+  const people = active.reduce((n, b) => n + b.party_size, 0);
+  let html = `<p style="margin:0 0 12px;font-size:13.5px;color:var(--ink-soft)">予約 ${active.length}組・${people}名様（ネット ${active.filter((b) => b.source === 'web').length}組／電話 ${active.filter((b) => b.source === 'phone').length}組）</p>`;
+  if (data.day.slots?.length) {
+    html += `<table class="slots"><thead><tr><th>開始</th><th>ネット 4人卓の残り</th><th>ネット 6人卓の残り</th></tr></thead><tbody>` +
+      data.day.slots.map((s) => {
+        const c = (n, cap) => `<td class="${n === 0 ? 'full' : ''}">${n === 0 ? '満' : n}<span style="color:var(--mute);font-size:11px"> / ${cap}</span></td>`;
+        return `<tr><th scope="row">${s.time}</th>${c(s.t4, data.settings.web_cap_4)}${c(s.t6, data.settings.web_cap_6)}</tr>`;
+      }).join('') + '</tbody></table>';
+  }
+  if (!data.bookings.length) html += '<div class="empty">この日の予約はまだありません</div>';
+  html += data.bookings.map((b) => `
+    <article class="bk${b.status === 'canceled' ? ' is-canceled' : ''}">
+      <div class="top"><span class="time">${hm(b.start_min)}</span><span class="party">${b.party_size}名様</span>
+        <span class="tag2 ${b.source}">${b.source === 'web' ? 'ネット' : '電話'}</span><span class="tag2">${esc(tname(b.table_id))}・〜${hm(b.end_min)}</span>
+        ${b.status === 'canceled' ? `<span class="tag2">取消済（${b.canceled_by === 'guest' ? 'お客様' : 'お店'}）</span>` : ''}</div>
+      <div class="name">${esc(b.name_kana)} 様</div>
+      <div class="meta">${b.phone ? `<a href="tel:${esc(b.phone)}">${esc(phoneFmt(b.phone))}</a>` : ''}${b.email ? `<span>${esc(b.email)}</span>` : ''}<span>予約番号 ${esc(b.code)}</span></div>
+      ${b.note ? `<div class="note">${esc(b.note)}</div>` : ''}
+      ${b.status === 'confirmed' ? `<div class="actions"><button class="btn btn--line btn--sm" type="button" data-edit="${b.id}">変更</button></div>` : ''}
+    </article>`).join('');
+  box.innerHTML = html;
+  $$('[data-edit]', box).forEach((btn) => btn.addEventListener('click', () => openSheet(data.bookings.find((b) => b.id === Number(btn.dataset.edit)))));
 }
 
 // ---------- 臨時休業・貸切 ----------
 $('#cl-slots').innerHTML = SLOTS.map((t) => `<label class="pill"><input type="checkbox" value="${t}"><span>${t}</span></label>`).join('');
 $$('input[name="cl-scope"]').forEach((r) => r.addEventListener('change', () => { $('#cl-slots').hidden = $('input[name="cl-scope"]:checked').value !== 'slots'; }));
-
 async function loadClosures() {
   const list = $('#cl-list'); list.innerHTML = '<div class="loading"><span class="spinner"></span>読み込み中</div>';
   try {
@@ -269,7 +550,7 @@ $('#cl-form').addEventListener('submit', async (e) => {
   finally { btn.disabled = false; }
 });
 
-// ---------- 設定 ----------
+// ---------- 設定：ネット枠 ----------
 async function loadSettings() {
   try { settings = (await api('/api/admin/settings')).settings; renderSettings(); } catch {}
 }
@@ -293,6 +574,46 @@ $('#set-save').addEventListener('click', async () => {
   m.hidden = false;
 });
 
+// ---------- 設定：卓 ----------
+async function loadTables() {
+  try { tablesEdit = (await api('/api/admin/tables')).tables.map((t) => ({ ...t })); renderTables(); } catch {}
+}
+function renderTables() {
+  $('#tb-list').innerHTML = tablesEdit.map((t, i) => `
+    <div class="tb-row${t.active ? '' : ' off'}" data-i="${i}">
+      <input type="text" value="${esc(t.name)}" data-k="name" aria-label="卓の名前" maxlength="20">
+      <input type="number" value="${t.capacity}" data-k="capacity" min="1" max="60" aria-label="人数" inputmode="numeric">
+      <label class="chk"><input type="checkbox" data-k="web_ok" ${t.web_ok ? 'checked' : ''} ${t.capacity === 4 || t.capacity === 6 ? '' : 'disabled'}>ネット</label>
+      <label class="chk"><input type="checkbox" data-k="active" ${t.active ? 'checked' : ''}>使う</label>
+      <div class="ord"><button class="btn btn--line btn--sm" type="button" data-mv="-1" aria-label="上へ" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn btn--line btn--sm" type="button" data-mv="1" aria-label="下へ" ${i === tablesEdit.length - 1 ? 'disabled' : ''}>↓</button></div>
+    </div>`).join('');
+}
+$('#tb-list').addEventListener('input', (e) => {
+  const row = e.target.closest('[data-i]'); if (!row) return;
+  const t = tablesEdit[Number(row.dataset.i)], k = e.target.dataset.k;
+  if (k === 'name') t.name = e.target.value;
+  if (k === 'capacity') { t.capacity = Number(e.target.value); if (!(t.capacity === 4 || t.capacity === 6)) t.web_ok = 0; }
+  if (k === 'web_ok') t.web_ok = e.target.checked ? 1 : 0;
+  if (k === 'active') t.active = e.target.checked ? 1 : 0;
+  if (k === 'capacity' || k === 'active') renderTables();
+  $('#tb-msg').hidden = true;
+});
+$('#tb-list').addEventListener('change', (e) => { if (e.target.dataset.k === 'capacity') renderTables(); });
+$('#tb-list').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mv]'); if (!b) return;
+  const i = Number(b.closest('[data-i]').dataset.i), j = i + Number(b.dataset.mv);
+  [tablesEdit[i], tablesEdit[j]] = [tablesEdit[j], tablesEdit[i]]; renderTables();
+});
+$('#tb-add').addEventListener('click', () => { tablesEdit.push({ name: `卓 ${tablesEdit.length + 1}`, capacity: 4, web_ok: 0, active: 1 }); renderTables(); $$('#tb-list input[data-k=name]').at(-1).focus(); });
+$('#tb-save').addEventListener('click', async () => {
+  const m = $('#tb-msg');
+  try {
+    tablesEdit = (await api('/api/admin/tables', { method: 'POST', body: JSON.stringify({ tables: tablesEdit }) })).tables.map((t) => ({ ...t }));
+    renderTables(); m.className = 'alert alert--ok'; m.textContent = '保存しました'; if (current) loadDay(current);
+  } catch (e) { m.className = 'alert alert--err'; m.textContent = e.message; }
+  m.hidden = false;
+});
+
 // ---------- 起動 ----------
 async function start() {
   $('#login').hidden = true; $('#app').hidden = false; $('#logout').hidden = false;
@@ -300,9 +621,10 @@ async function start() {
 }
 (async () => {
   const r = await fetch('/api/admin/me').then((x) => x.json()).catch(() => ({}));
-  today = r.today || new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  today = r.today || nowJst().date;
   r.admin ? start() : showLogin();
 })();
+addEventListener('resize', () => { if (tab === 'board' && data) renderBoard(); });
 </script>
 </body>
 </html>

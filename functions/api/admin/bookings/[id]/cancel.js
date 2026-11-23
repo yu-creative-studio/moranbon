@@ -9,6 +9,7 @@ export const onRequestPost = requireAdmin(async (ctx) => {
   if (!Number.isInteger(id)) return fail('予約が見つかりません', 404);
   const result = await cancelById(ctx.env.DB, id, 'admin', nowJst());
   if (result.error) return fail(result.error, result.status);
-  notifyLater(ctx, 'canceled', result.booking);
+  // メールはネット予約のお客さんにだけ送る
+  if (result.booking.source === 'web' && result.booking.email) notifyLater(ctx, 'canceled', result.booking);
   return json({ ok: true, booking: result.booking });
 });
